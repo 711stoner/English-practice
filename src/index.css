@@ -102,6 +102,22 @@ body {
   background-size: 120px 120px;
 }
 
+.card::before {
+  content: "";
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  width: 42px;
+  height: 42px;
+  opacity: 0.18;
+  background:
+    radial-gradient(circle at 50% 35%, #f59e42 9px, transparent 10px),
+    radial-gradient(circle at 20% 20%, #f59e42 5px, transparent 6px),
+    radial-gradient(circle at 80% 20%, #f59e42 5px, transparent 6px),
+    radial-gradient(circle at 15% 55%, #f59e42 5px, transparent 6px),
+    radial-gradient(circle at 85% 55%, #f59e42 5px, transparent 6px);
+}
+
 .input {
   width: 100%;
   padding: 10px 12px;
@@ -122,7 +138,8 @@ body {
 }
 
 .button {
-  padding: 8px 14px;
+  position: relative;
+  padding: 8px 16px;
   border: none;
   background: linear-gradient(135deg, var(--cat-accent), var(--cat-accent-2));
   color: #fff;
@@ -131,6 +148,27 @@ body {
   font-weight: 700;
   box-shadow: 0 6px 14px rgba(245, 158, 66, 0.35);
   transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.button::before,
+.button::after {
+  content: "";
+  position: absolute;
+  top: -6px;
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(135deg, var(--cat-accent), var(--cat-accent-2));
+  border-radius: 3px 3px 8px 3px;
+  transform: rotate(45deg);
+  box-shadow: 0 4px 10px rgba(245, 158, 66, 0.2);
+}
+
+.button::before {
+  left: 12px;
+}
+
+.button::after {
+  right: 12px;
 }
 
 .button:hover {
