@@ -39,11 +39,58 @@ body {
   top: 0;
   z-index: 10;
   display: flex;
+  align-items: center;
   gap: 16px;
-  padding: 16px 20px;
+  padding: 14px 20px;
   background: #fff6ee;
   border-bottom: 2px solid var(--cat-border);
   box-shadow: 0 8px 20px var(--cat-shadow);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: 10px;
+}
+
+.brand-title {
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--cat-ink);
+}
+
+.brand-logo {
+  position: relative;
+  width: 34px;
+  height: 30px;
+  border-radius: 12px 12px 16px 16px;
+  background: linear-gradient(135deg, var(--cat-accent), var(--cat-accent-2));
+  box-shadow: 0 8px 14px rgba(245, 158, 66, 0.35);
+}
+
+.brand-logo::before,
+.brand-logo::after {
+  content: "";
+  position: absolute;
+  top: -6px;
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(135deg, var(--cat-accent), var(--cat-accent-2));
+  border-radius: 3px 3px 8px 3px;
+  transform: rotate(45deg);
+}
+
+.brand-logo::before {
+  left: 2px;
+}
+
+.brand-logo::after {
+  right: 2px;
+}
+
+.brand-logo span {
+  display: block;
 }
 
 .nav::after {

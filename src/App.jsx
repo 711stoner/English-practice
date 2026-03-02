@@ -7,6 +7,11 @@ export default function App() {
   return (
     <div className="app">
       <header className="nav">
+        <div className="brand">
+          <div className="brand-logo" aria-hidden="true" />
+          <div className="brand-title">小猫学英语</div>
+        </div>
+
         <NavLink to="/bank" className="nav-link">
           句仓
         </NavLink>
