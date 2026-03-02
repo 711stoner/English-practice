@@ -9,6 +9,7 @@
   --cat-border: #f1dfd1;
   --cat-shadow: rgba(75, 47, 31, 0.08);
   --cat-muted: #7a5a45;
+  --cat-stripe: rgba(245, 158, 66, 0.08);
 }
 
 * {
@@ -33,12 +34,29 @@ body {
 }
 
 .nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   gap: 16px;
   padding: 16px 20px;
   background: #fff6ee;
   border-bottom: 2px solid var(--cat-border);
   box-shadow: 0 8px 20px var(--cat-shadow);
+}
+
+.nav::after {
+  content: "";
+  position: absolute;
+  right: 20px;
+  top: 8px;
+  width: 46px;
+  height: 22px;
+  background: linear-gradient(135deg, var(--cat-accent), var(--cat-accent-2));
+  border-radius: 0 0 12px 12px;
+  clip-path: polygon(0% 0%, 25% 0%, 35% 45%, 50% 0%, 65% 45%, 75% 0%, 100% 0%, 100% 100%, 0% 100%);
+  opacity: 0.35;
+  pointer-events: none;
 }
 
 .nav-link {
@@ -68,12 +86,20 @@ body {
 }
 
 .card {
+  position: relative;
   background: var(--cat-card);
   border: 2px solid var(--cat-border);
-  border-radius: 16px;
+  border-radius: 18px;
   padding: 18px;
   margin-bottom: 18px;
   box-shadow: 0 10px 24px var(--cat-shadow);
+  background-image:
+    linear-gradient(90deg, transparent 0%, transparent 40%, var(--cat-stripe) 40%, var(--cat-stripe) 55%, transparent 55%, transparent 100%),
+    radial-gradient(circle at 88% 16%, rgba(245, 158, 66, 0.12) 3px, transparent 4px),
+    radial-gradient(circle at 91% 19%, rgba(245, 158, 66, 0.12) 2px, transparent 3px),
+    radial-gradient(circle at 94% 16%, rgba(245, 158, 66, 0.12) 2px, transparent 3px),
+    radial-gradient(circle at 91% 12%, rgba(245, 158, 66, 0.12) 2px, transparent 3px);
+  background-size: 120px 120px;
 }
 
 .input {
@@ -143,4 +169,8 @@ h2,
 h3 {
   font-family: "Yomogi", "Nunito", sans-serif;
   color: var(--cat-ink);
+}
+
+h2 {
+  letter-spacing: 0.5px;
 }
