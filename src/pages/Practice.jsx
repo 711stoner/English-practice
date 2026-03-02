@@ -177,6 +177,7 @@ export default function Practice() {
         <p>今天没有到期句子</p>
         <button className="button" type="button" onClick={enterRandomMode}>
           随机练习一条（不影响复习计划）
+          <span className="paw" />
         </button>
       </div>
     );
@@ -278,6 +279,7 @@ export default function Practice() {
         <div style={{ marginBottom: 12 }}>
           <button className="button" type="button" onClick={handleRebuildQueue}>
             重新生成今日队列
+            <span className="paw" />
           </button>
         </div>
       )}
@@ -286,6 +288,7 @@ export default function Practice() {
         <div style={{ marginBottom: 12 }}>
           <button className="button" type="button" onClick={exitRandomMode}>
             退出随机练习
+            <span className="paw" />
           </button>
         </div>
       )}
@@ -313,6 +316,7 @@ export default function Practice() {
         <div style={{ marginTop: 8 }}>
           <button className="button" type="submit" disabled={submitted}>
             提交
+            <span className="paw" />
           </button>
           <button
             className="button"
@@ -321,6 +325,7 @@ export default function Practice() {
             style={{ marginLeft: 8 }}
           >
             下一题
+            <span className="paw" />
           </button>
         </div>
       </form>
@@ -347,6 +352,7 @@ export default function Practice() {
               onClick={() => handleRate(4)}
             >
               记住了
+              <span className="paw" />
             </button>
             <button
               className="button"
@@ -355,6 +361,7 @@ export default function Practice() {
               style={{ marginLeft: 8 }}
             >
               有点难
+              <span className="paw" />
             </button>
             <button
               className="button"
@@ -363,6 +370,7 @@ export default function Practice() {
               style={{ marginLeft: 8 }}
             >
               忘了
+              <span className="paw" />
             </button>
           </div>
         </div>

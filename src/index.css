@@ -41,23 +41,73 @@ body {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 14px 20px;
+  padding: 14px 20px 22px;
   background: #fff6ee;
   border-bottom: 2px solid var(--cat-border);
   box-shadow: 0 8px 20px var(--cat-shadow);
 }
 
+.nav::after {
+  content: "";
+  position: absolute;
+  right: 20px;
+  top: 8px;
+  width: 46px;
+  height: 22px;
+  background: linear-gradient(135deg, var(--cat-accent), var(--cat-accent-2));
+  border-radius: 0 0 12px 12px;
+  clip-path: polygon(0% 0%, 25% 0%, 35% 45%, 50% 0%, 65% 45%, 75% 0%, 100% 0%, 100% 100%, 0% 100%);
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.nav::before {
+  content: "";
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: -12px;
+  height: 24px;
+  background:
+    radial-gradient(circle at 12% 40%, rgba(245, 158, 66, 0.35) 8px, transparent 9px),
+    radial-gradient(circle at 20% 40%, rgba(245, 158, 66, 0.35) 8px, transparent 9px),
+    radial-gradient(circle at 28% 40%, rgba(245, 158, 66, 0.35) 8px, transparent 9px),
+    radial-gradient(circle at 72% 40%, rgba(245, 158, 66, 0.35) 8px, transparent 9px),
+    radial-gradient(circle at 80% 40%, rgba(245, 158, 66, 0.35) 8px, transparent 9px),
+    radial-gradient(circle at 88% 40%, rgba(245, 158, 66, 0.35) 8px, transparent 9px);
+  opacity: 0.35;
+  pointer-events: none;
+}
+
 .brand {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
   margin-right: 10px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(245, 158, 66, 0.12);
 }
 
 .brand-title {
   font-weight: 800;
   letter-spacing: 0.5px;
   color: var(--cat-ink);
+}
+
+.brand::after {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 40px;
+  width: 70px;
+  height: 18px;
+  background: linear-gradient(135deg, rgba(245, 158, 66, 0.5), rgba(246, 192, 122, 0.6));
+  border-radius: 0 0 12px 12px;
+  clip-path: polygon(0% 0%, 18% 0%, 28% 55%, 40% 0%, 60% 55%, 72% 0%, 100% 0%, 100% 100%, 0% 100%);
+  opacity: 0.4;
+  pointer-events: none;
 }
 
 .brand-logo {
@@ -87,24 +137,6 @@ body {
 
 .brand-logo::after {
   right: 2px;
-}
-
-.brand-logo span {
-  display: block;
-}
-
-.nav::after {
-  content: "";
-  position: absolute;
-  right: 20px;
-  top: 8px;
-  width: 46px;
-  height: 22px;
-  background: linear-gradient(135deg, var(--cat-accent), var(--cat-accent-2));
-  border-radius: 0 0 12px 12px;
-  clip-path: polygon(0% 0%, 25% 0%, 35% 45%, 50% 0%, 65% 45%, 75% 0%, 100% 0%, 100% 100%, 0% 100%);
-  opacity: 0.35;
-  pointer-events: none;
 }
 
 .nav-link {
@@ -166,6 +198,20 @@ body {
     radial-gradient(circle at 85% 55%, #f59e42 5px, transparent 6px);
 }
 
+.card::after {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 18px;
+  width: 26px;
+  height: 16px;
+  border-radius: 0 12px 12px 0;
+  border: 2px solid var(--cat-border);
+  border-left: none;
+  background: linear-gradient(135deg, rgba(245, 158, 66, 0.4), rgba(246, 192, 122, 0.6));
+  opacity: 0.5;
+}
+
 .input {
   width: 100%;
   padding: 10px 12px;
@@ -196,6 +242,7 @@ body {
   font-weight: 700;
   box-shadow: 0 6px 14px rgba(245, 158, 66, 0.35);
   transition: transform 0.15s ease, box-shadow 0.2s ease;
+  overflow: hidden;
 }
 
 .button::before,
@@ -222,6 +269,29 @@ body {
 .button:hover {
   transform: translateY(-1px);
   box-shadow: 0 10px 18px rgba(245, 158, 66, 0.4);
+}
+
+.button:hover .paw,
+.button:focus-visible .paw {
+  opacity: 1;
+  transform: translateY(-6px) scale(1);
+}
+
+.button .paw {
+  position: absolute;
+  right: 10px;
+  bottom: -6px;
+  width: 18px;
+  height: 18px;
+  opacity: 0;
+  transform: translateY(4px) scale(0.9);
+  transition: all 0.2s ease;
+  background:
+    radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.9) 4px, transparent 5px),
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.9) 2px, transparent 3px),
+    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.9) 2px, transparent 3px),
+    radial-gradient(circle at 15% 60%, rgba(255, 255, 255, 0.9) 2px, transparent 3px),
+    radial-gradient(circle at 85% 60%, rgba(255, 255, 255, 0.9) 2px, transparent 3px);
 }
 
 .button:disabled {

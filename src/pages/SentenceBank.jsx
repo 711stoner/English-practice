@@ -389,6 +389,7 @@ export default function SentenceBank() {
 
           <button className="button" type="submit">
             添加
+            <span className="paw" />
           </button>
         </form>
       </div>
@@ -406,6 +407,7 @@ export default function SentenceBank() {
         />
         <button className="button" type="button" onClick={handleBulkAdd}>
           批量添加
+          <span className="paw" />
         </button>
 
         {bulkResult && (
@@ -438,6 +440,7 @@ export default function SentenceBank() {
         <div style={{ marginTop: 8 }}>
           <button className="button" type="button" onClick={handleExcelImport}>
             开始导入
+            <span className="paw" />
           </button>
         </div>
 
@@ -466,6 +469,7 @@ export default function SentenceBank() {
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button className="button" type="button" onClick={handleExport}>
             导出备份
+            <span className="paw" />
           </button>
           <input
             type="file"
@@ -474,6 +478,7 @@ export default function SentenceBank() {
           />
           <button className="button" type="button" onClick={handleImport}>
             导入
+            <span className="paw" />
           </button>
         </div>
 
@@ -512,6 +517,7 @@ export default function SentenceBank() {
             </div>
             <button className="button delete" onClick={() => handleDelete(s.id)}>
               删除
+              <span className="paw" />
             </button>
           </div>
         ))}
