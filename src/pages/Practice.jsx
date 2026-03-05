@@ -51,6 +51,7 @@ export default function Practice() {
   const [submitted, setSubmitted] = useState(false);
   const [skipMessage, setSkipMessage] = useState("");
   const [answerMessage, setAnswerMessage] = useState("");
+  const [showHint, setShowHint] = useState(false);
   const skipTimeoutRef = useRef(null);
   const lastTickRef = useRef(Date.now());
   const intervalRef = useRef(null);
@@ -125,6 +126,7 @@ export default function Practice() {
     setSubmitted(false);
     setSkipMessage("");
     setAnswerMessage("");
+    setShowHint(false);
   }
 
   function rebuildQueueFromStorage() {
@@ -202,6 +204,7 @@ export default function Practice() {
     setSubmitted(true);
     setSkipMessage("");
     setAnswerMessage("");
+    setShowHint(false);
   }
 
   function handleNext() {
@@ -218,6 +221,7 @@ export default function Practice() {
     setResult(null);
     setSubmitted(false);
     setAnswerMessage("");
+    setShowHint(false);
 
     if (skipTimeoutRef.current) {
       clearTimeout(skipTimeoutRef.current);
@@ -254,6 +258,7 @@ export default function Practice() {
     setResult(null);
     setSubmitted(false);
     setSkipMessage("");
+    setShowHint(false);
   }
 
   function handleRebuildQueue() {
@@ -327,6 +332,16 @@ export default function Practice() {
             下一题
             <span className="paw" />
           </button>
+          <button
+            className="button"
+            type="button"
+            onClick={() => setShowHint(true)}
+            style={{ marginLeft: 8 }}
+            disabled={submitted}
+          >
+            提示
+            <span className="paw" />
+          </button>
         </div>
       </form>
 
@@ -337,6 +352,12 @@ export default function Practice() {
       {answerMessage && (
         <div style={{ marginTop: 8, color: "#333", whiteSpace: "pre-line" }}>
           {answerMessage}
+        </div>
+      )}
+
+      {showHint && !submitted && (
+        <div style={{ marginTop: 8, color: "#333" }}>
+          答案：{current.text}
         </div>
       )}
 
