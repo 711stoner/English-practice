@@ -9,3 +9,4 @@ RUN npm run build
 # Runtime stage (static)
 FROM zeabur/caddy-static:latest
 COPY --from=builder /app/dist /srv
+COPY Caddyfile /etc/caddy/Caddyfile
