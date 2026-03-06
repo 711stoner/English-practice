@@ -3,8 +3,76 @@ import { useSentences } from "../hooks/useSentences.js";
 import { ensureSrs } from "../storage/sentencesStore.js";
 import { upsertToday } from "../storage/historyStore.js";
 
-function normalizeSpaces(text) {
-  return text.trim().replace(/\s+/g, " ");
+function normalizeForCompare(text) {
+  return text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, "")
+    .replace(/\s+/g, "");
+}
+
+function normalizeForTokens(text) {
+  return text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, "")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function levenshtein(a, b) {
+  if (a === b) return 0;
+  const aLen = a.length;
+  const bLen = b.length;
+  if (aLen === 0) return bLen;
+  if (bLen === 0) return aLen;
+
+  const prev = Array.from({ length: bLen + 1 }, (_, i) => i);
+  const curr = new Array(bLen + 1).fill(0);
+
+  for (let i = 1; i <= aLen; i += 1) {
+    curr[0] = i;
+    const aChar = a[i - 1];
+    for (let j = 1; j <= bLen; j += 1) {
+      const cost = aChar === b[j - 1] ? 0 : 1;
+      curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+    }
+    for (let j = 0; j <= bLen; j += 1) {
+      prev[j] = curr[j];
+    }
+  }
+
+  return prev[bLen];
+}
+
+function getFuzzyMatchInfo(userText, answerText) {
+  const userNorm = normalizeForCompare(userText);
+  const answerNorm = normalizeForCompare(answerText);
+  const maxLen = Math.max(userNorm.length, answerNorm.length);
+  const distance = levenshtein(userNorm, answerNorm);
+  const threshold = Math.min(4, Math.max(1, Math.floor(maxLen * 0.05)));
+  if (distance > threshold) return { ok: false, message: "" };
+
+  const userTokens = normalizeForTokens(userText).split(" ").filter(Boolean);
+  const answerTokens = normalizeForTokens(answerText).split(" ").filter(Boolean);
+
+  if (userTokens.length !== answerTokens.length) {
+    return {
+      ok: true,
+      message: "单词数量不一致，已模糊通过",
+    };
+  }
+
+  const mismatches = [];
+  for (let i = 0; i < userTokens.length; i += 1) {
+    if (userTokens[i] !== answerTokens[i]) {
+      mismatches.push(`${userTokens[i]} → ${answerTokens[i]}`);
+    }
+  }
+
+  return {
+    ok: true,
+    message:
+      mismatches.length > 0 ? `拼写问题：${mismatches.join("，")}` : "",
+  };
 }
 
 function applySm2(srs, q) {
@@ -24,6 +92,24 @@ function applySm2(srs, q) {
 
   const dueAt = Date.now() + intervalDays * 24 * 60 * 60 * 1000;
   return { dueAt, intervalDays, ease, reps, lapses };
+}
+
+const MASTERY_REPS = 8;
+const MASTERY_INTERVAL_DAYS = 730;
+
+function applySm2WithMastery(srs, q) {
+  const updated = applySm2(srs, q);
+  const mastered =
+    q >= 3 &&
+    updated.reps >= MASTERY_REPS &&
+    updated.intervalDays >= MASTERY_INTERVAL_DAYS;
+  return {
+    ...updated,
+    mastered,
+    masteredAt: mastered ? Date.now() : null,
+    lastReviewAt: Date.now(),
+    dueAt: mastered ? Number.POSITIVE_INFINITY : updated.dueAt,
+  };
 }
 
 function shuffleArray(arr) {
@@ -52,6 +138,8 @@ export default function Practice() {
   const [skipMessage, setSkipMessage] = useState("");
   const [answerMessage, setAnswerMessage] = useState("");
   const [showHint, setShowHint] = useState(false);
+  const [correctStreak, setCorrectStreak] = useState(0);
+  const [fuzzyNotice, setFuzzyNotice] = useState("");
   const skipTimeoutRef = useRef(null);
   const lastTickRef = useRef(Date.now());
   const intervalRef = useRef(null);
@@ -127,6 +215,8 @@ export default function Practice() {
     setSkipMessage("");
     setAnswerMessage("");
     setShowHint(false);
+    setCorrectStreak(0);
+    setFuzzyNotice("");
   }
 
   function rebuildQueueFromStorage() {
@@ -197,14 +287,40 @@ export default function Practice() {
   function handleSubmit(e) {
     e.preventDefault();
     if (submitted) return;
-    const user = normalizeSpaces(input);
-    const answer = normalizeSpaces(current.text || "");
-    const ok = user === answer;
+    const user = normalizeForCompare(input);
+    const answer = normalizeForCompare(current.text || "");
+    const exactOk = user === answer;
+    let fuzzyMessage = "";
+    let ok = exactOk;
+
+    if (!exactOk) {
+      const fuzzy = getFuzzyMatchInfo(input, current.text || "");
+      if (fuzzy.ok) {
+        ok = true;
+        fuzzyMessage = fuzzy.message;
+      }
+    }
+
+    if (ok && correctStreak === 0) {
+      setCorrectStreak(1);
+      setInput("");
+      setResult(null);
+      setSubmitted(false);
+      setSkipMessage("");
+      const notice = fuzzyMessage ? `✅ 基本正确（有拼写问题）：${fuzzyMessage}` : "✅ 正确";
+      setAnswerMessage(`${notice}\n请再拼写一次确认`);
+      setShowHint(false);
+      setFuzzyNotice(fuzzyMessage);
+      return;
+    }
+
+    setCorrectStreak(0);
     setResult(ok);
     setSubmitted(true);
     setSkipMessage("");
     setAnswerMessage("");
     setShowHint(false);
+    setFuzzyNotice(fuzzyMessage);
   }
 
   function handleNext() {
@@ -222,11 +338,13 @@ export default function Practice() {
     setSubmitted(false);
     setAnswerMessage("");
     setShowHint(false);
+    setCorrectStreak(0);
+    setFuzzyNotice("");
 
     if (skipTimeoutRef.current) {
       clearTimeout(skipTimeoutRef.current);
     }
-    setSkipMessage("已跳过：不更新记忆曲线");
+    setSkipMessage("已标记为不会：稍后继续背诵（不更新记忆曲线）");
     skipTimeoutRef.current = setTimeout(() => {
       setSkipMessage("");
       skipTimeoutRef.current = null;
@@ -236,7 +354,7 @@ export default function Practice() {
   function handleRate(q) {
     const next = sentences.map((s) => {
       if (s.id !== current.id) return s;
-      const updatedSrs = applySm2(ensureSrs(s).srs, q);
+      const updatedSrs = applySm2WithMastery(ensureSrs(s).srs, q);
       return { ...s, srs: updatedSrs };
     });
     setSentences(next);
@@ -329,7 +447,7 @@ export default function Practice() {
             onClick={handleNext}
             style={{ marginLeft: 8 }}
           >
-            下一题
+            不会，下一题
             <span className="paw" />
           </button>
           <button
@@ -365,6 +483,9 @@ export default function Practice() {
         <div style={{ marginTop: 12 }}>
           <div>{result ? "✅ 正确" : "❌ 错误"}</div>
           <div>正确答案：{current.text}</div>
+          {result && fuzzyNotice && (
+            <div style={{ marginTop: 6, color: "#c66" }}>{fuzzyNotice}</div>
+          )}
 
           <div style={{ marginTop: 12 }}>
             <button

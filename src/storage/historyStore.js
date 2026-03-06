@@ -1,4 +1,7 @@
 const STORAGE_KEY = "history";
+const TIME_ZONE = "Asia/Shanghai";
+const DAY_START_HOUR = 7;
+const UTC_OFFSET_HOURS = 8;
 
 function safeParse(json) {
   try {
@@ -8,13 +11,14 @@ function safeParse(json) {
   }
 }
 
-export function getTaipeiDateString(ts = Date.now()) {
+export function getCstDateString(ts = Date.now()) {
+  const shifted = ts - DAY_START_HOUR * 60 * 60 * 1000;
   const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Taipei",
+    timeZone: TIME_ZONE,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).formatToParts(new Date(ts));
+  }).formatToParts(new Date(shifted));
 
   const map = {};
   for (const p of parts) {
@@ -22,6 +26,18 @@ export function getTaipeiDateString(ts = Date.now()) {
   }
 
   return `${map.year}-${map.month}-${map.day}`;
+}
+
+export function getCstDayStartMs(ts = Date.now()) {
+  const parts = getCstDateString(ts).split("-");
+  const y = Number(parts[0]);
+  const m = Number(parts[1]) - 1;
+  const d = Number(parts[2]);
+  return Date.UTC(y, m, d, DAY_START_HOUR - UTC_OFFSET_HOURS);
+}
+
+export function getTaipeiDateString(ts = Date.now()) {
+  return getCstDateString(ts);
 }
 
 function defaultDay(date) {
@@ -67,7 +83,7 @@ export function subscribeHistory(callback) {
 }
 
 export function upsertToday(patchFn) {
-  const today = getTaipeiDateString();
+  const today = getCstDateString();
   const history = loadHistory();
   const index = history.findIndex((d) => d.date === today);
 

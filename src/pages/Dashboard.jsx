@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useSentences } from "../hooks/useSentences.js";
 import { useHistory } from "../hooks/useHistory.js";
-import { getTaipeiDateString } from "../storage/historyStore.js";
+import {
+  getCstDateString,
+  getCstDayStartMs,
+} from "../storage/historyStore.js";
 
 function formatDateTime(ts) {
   if (!ts) return "-";
@@ -20,21 +23,14 @@ function formatDuration(seconds) {
   return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
 }
 
-function startOfTodayTaipei() {
-  const parts = getTaipeiDateString().split("-");
-  const y = Number(parts[0]);
-  const m = Number(parts[1]) - 1;
-  const d = Number(parts[2]);
-  return Date.UTC(y, m, d);
-}
-
 function shiftDateStr(dateStr, deltaDays) {
   const parts = dateStr.split("-");
   const y = Number(parts[0]);
   const m = Number(parts[1]) - 1;
   const d = Number(parts[2]);
-  const ts = Date.UTC(y, m, d) + deltaDays * 24 * 60 * 60 * 1000;
-  return getTaipeiDateString(ts);
+  const base = Date.UTC(y, m, d, -1);
+  const ts = base + deltaDays * 24 * 60 * 60 * 1000;
+  return getCstDateString(ts);
 }
 
 export default function Dashboard() {
@@ -43,7 +39,7 @@ export default function Dashboard() {
   const canvasRef = useRef(null);
 
   const now = Date.now();
-  const todayStart = startOfTodayTaipei();
+  const todayStart = getCstDayStartMs();
   const dayMs = 24 * 60 * 60 * 1000;
 
   const stats = useMemo(() => {
@@ -54,8 +50,9 @@ export default function Dashboard() {
       return due >= todayStart && due < todayStart + 7 * dayMs;
     }).length;
     const learned = sentences.filter((s) => (s.srs?.reps ?? 0) > 0).length;
+    const mastered = sentences.filter((s) => s.srs?.mastered).length;
 
-    return { total, dueToday, next7, learned };
+    return { total, dueToday, next7, learned, mastered };
   }, [sentences, now, todayStart, dayMs]);
 
   const barData = useMemo(() => {
@@ -77,7 +74,7 @@ export default function Dashboard() {
   }, [sentences, now]);
 
   const todayHistory = useMemo(() => {
-    const today = getTaipeiDateString();
+    const today = getCstDateString();
     return (
       history.find((d) => d.date === today) || {
         reviewedCount: 0,
@@ -89,7 +86,7 @@ export default function Dashboard() {
 
   const streakDays = useMemo(() => {
     const map = new Map(history.map((d) => [d.date, d]));
-    const today = getTaipeiDateString();
+    const today = getCstDateString();
     const isCheckin = (day) =>
       (day.reviewedCount || 0) > 0 || (day.durationSeconds || 0) >= 60;
 
@@ -167,12 +164,16 @@ export default function Dashboard() {
             <strong style={{ fontSize: 24 }}>{stats.dueToday}</strong>
           </div>
           <div className="card" style={{ minWidth: 160 }}>
-            <div>未来7天到期</div>
+            <div>未来7天计划复习</div>
             <strong style={{ fontSize: 24 }}>{stats.next7}</strong>
           </div>
           <div className="card" style={{ minWidth: 160 }}>
             <div>已学（reps&gt;0）</div>
             <strong style={{ fontSize: 24 }}>{stats.learned}</strong>
+          </div>
+          <div className="card" style={{ minWidth: 160 }}>
+            <div>已掌握（暂停复习）</div>
+            <strong style={{ fontSize: 24 }}>{stats.mastered}</strong>
           </div>
         </div>
       </div>
@@ -200,7 +201,7 @@ export default function Dashboard() {
       </div>
 
       <div className="card">
-        <h3>未来7天到期柱状图</h3>
+        <h3>未来7天计划复习柱状图</h3>
         <canvas ref={canvasRef} width={700} height={260} />
       </div>
 

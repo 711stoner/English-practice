@@ -28,6 +28,8 @@ function defaultSrs() {
     stability: null,
     difficulty: null,
     lastReviewAt: null,
+    mastered: false,
+    masteredAt: null,
   };
 }
 
@@ -45,6 +47,8 @@ export function ensureSrs(sentence) {
       stability: typeof srs.stability === "number" ? srs.stability : null,
       difficulty: typeof srs.difficulty === "number" ? srs.difficulty : null,
       lastReviewAt: typeof srs.lastReviewAt === "number" ? srs.lastReviewAt : null,
+      mastered: typeof srs.mastered === "boolean" ? srs.mastered : false,
+      masteredAt: typeof srs.masteredAt === "number" ? srs.masteredAt : null,
     },
   };
 }

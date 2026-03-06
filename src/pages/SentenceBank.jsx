@@ -515,6 +515,11 @@ export default function SentenceBank() {
               <strong>中文：</strong>
               {s.meaning}
             </div>
+            {s.srs?.mastered && (
+              <div style={{ marginTop: 6, color: "#2c7a3f" }}>
+                已掌握（暂停复习）
+              </div>
+            )}
             <button className="button delete" onClick={() => handleDelete(s.id)}>
               删除
               <span className="paw" />
