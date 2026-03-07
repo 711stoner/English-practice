@@ -132,6 +132,7 @@ export default function Practice() {
   const skipTimeoutRef = useRef(null);
   const lastTickRef = useRef(Date.now());
   const intervalRef = useRef(null);
+  const lastQuestionIdRef = useRef(null);
 
   useEffect(() => {
     const now = Date.now();
@@ -195,6 +196,21 @@ export default function Practice() {
     const currentId = queueIds[0];
     return sentences.find((s) => s.id === currentId) || null;
   }, [sentences, queueIds, isRandomMode, randomId]);
+
+  useEffect(() => {
+    const currentId = current?.id || null;
+    if (currentId && lastQuestionIdRef.current && currentId !== lastQuestionIdRef.current) {
+      setInput("");
+      setResult(null);
+      setSubmitted(false);
+      setSkipMessage("");
+      setAnswerMessage("");
+      setShowHint(false);
+      setCorrectStreak(0);
+      setFuzzyNotice("");
+    }
+    lastQuestionIdRef.current = currentId;
+  }, [current?.id]);
 
   function resetPracticeState() {
     setInput("");
