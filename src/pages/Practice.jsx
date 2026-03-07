@@ -283,15 +283,29 @@ export default function Practice() {
     const answer = normalizeForCompare(current.text || "");
     const exactOk = user === answer;
     let fuzzyMessage = "";
-    let ok = exactOk;
+
+    if (exactOk && correctStreak === 0) {
+      setCorrectStreak(1);
+      setInput("");
+      setResult(null);
+      setSubmitted(false);
+      setSkipMessage("");
+      const notice = fuzzyMessage ? `✅ 基本正确（有拼写问题）：${fuzzyMessage}` : "✅ 正确";
+      setAnswerMessage(`${notice}\n请再拼写一次确认`);
+      setShowHint(false);
+      setFuzzyNotice(fuzzyMessage);
+      return;
+    }
 
     if (!exactOk) {
       const fuzzy = getFuzzyMatchInfo(input, current.text || "");
       if (fuzzy.ok) {
-        ok = true;
         fuzzyMessage = fuzzy.message;
       }
     }
+
+    const ok =
+      correctStreak === 0 ? exactOk || Boolean(fuzzyMessage) : exactOk;
 
     if (ok && correctStreak === 0) {
       setCorrectStreak(1);
