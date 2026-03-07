@@ -57,18 +57,13 @@ function getFuzzyMatchInfo(userText, answerText) {
   const answerNorm = normalizeForCompare(answerText);
   const maxLen = Math.max(userNorm.length, answerNorm.length);
   const distance = levenshtein(userNorm, answerNorm);
-  const threshold = Math.min(4, Math.max(1, Math.floor(maxLen * 0.05)));
+  const threshold = 1;
   if (distance > threshold) return { ok: false, message: "" };
 
   const userTokens = normalizeForTokens(userText).split(" ").filter(Boolean);
   const answerTokens = normalizeForTokens(answerText).split(" ").filter(Boolean);
 
-  if (userTokens.length !== answerTokens.length) {
-    return {
-      ok: true,
-      message: "单词数量不一致，已模糊通过",
-    };
-  }
+  if (userTokens.length !== answerTokens.length) return { ok: false, message: "" };
 
   const mismatches = [];
   for (let i = 0; i < userTokens.length; i += 1) {
@@ -78,7 +73,7 @@ function getFuzzyMatchInfo(userText, answerText) {
   }
 
   return {
-    ok: true,
+    ok: mismatches.length <= 1,
     message:
       mismatches.length > 0 ? `拼写问题：${mismatches.join("，")}` : "",
   };
