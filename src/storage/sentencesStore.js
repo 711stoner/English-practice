@@ -1,3 +1,5 @@
+import { createFsrsCard, ensureFsrsCard } from "../srs/fsrs.js";
+
 const STORAGE_KEY = "sentences";
 const LEGACY_KEYS = [
   "sentence",
@@ -19,6 +21,7 @@ function safeParse(json) {
 }
 
 function defaultSrs() {
+  const fsrs = createFsrsCard();
   return {
     dueAt: Date.now(),
     intervalDays: 0,
@@ -30,12 +33,15 @@ function defaultSrs() {
     lastReviewAt: null,
     mastered: false,
     masteredAt: null,
+    algorithm: "fsrs",
+    fsrs,
   };
 }
 
 export function ensureSrs(sentence) {
   const now = Date.now();
   const srs = sentence.srs || {};
+  const fsrs = ensureFsrsCard(srs, sentence.createdAt);
   return {
     ...sentence,
     srs: {
@@ -49,6 +55,8 @@ export function ensureSrs(sentence) {
       lastReviewAt: typeof srs.lastReviewAt === "number" ? srs.lastReviewAt : null,
       mastered: typeof srs.mastered === "boolean" ? srs.mastered : false,
       masteredAt: typeof srs.masteredAt === "number" ? srs.masteredAt : null,
+      algorithm: typeof srs.algorithm === "string" ? srs.algorithm : "fsrs",
+      fsrs,
     },
   };
 }
@@ -56,7 +64,16 @@ export function ensureSrs(sentence) {
 export function loadSentences() {
   const raw = localStorage.getItem(STORAGE_KEY);
   const data = safeParse(raw);
-  if (Array.isArray(data)) return data.map(ensureSrs);
+  if (Array.isArray(data)) {
+    const next = data.map(ensureSrs);
+    const needsSave = data.some((item, idx) => {
+      const before = item?.srs?.fsrs;
+      const after = next[idx]?.srs?.fsrs;
+      return !before && after;
+    });
+    if (needsSave) saveSentences(next);
+    return next;
+  }
   return [];
 }
 
@@ -120,12 +137,17 @@ export function makeId() {
 
 export function createSentence({ text, meaning, tags }) {
   const now = Date.now();
+  const fsrs = createFsrsCard(now);
   return {
     id: makeId(),
     text,
     meaning,
     tags,
     createdAt: now,
-    srs: defaultSrs(),
+    srs: {
+      ...defaultSrs(),
+      dueAt: fsrs.due,
+      fsrs,
+    },
   };
 }

@@ -33,6 +33,17 @@ function shiftDateStr(dateStr, deltaDays) {
   return getCstDateString(ts);
 }
 
+function isDueByCstDay(srs, now = Date.now()) {
+  if (!srs || srs.mastered) return false;
+  const dueAt = srs.dueAt;
+  if (typeof dueAt !== "number" || !Number.isFinite(dueAt)) return false;
+  const dueDate = getCstDateString(dueAt);
+  const today = getCstDateString(now);
+  return dueDate <= today;
+}
+
+const DAILY_REVIEW_LIMIT = 15;
+
 export default function Dashboard() {
   const { sentences } = useSentences();
   const { history } = useHistory();
@@ -44,10 +55,16 @@ export default function Dashboard() {
 
   const stats = useMemo(() => {
     const total = sentences.length;
-    const dueToday = sentences.filter((s) => s.srs?.dueAt <= now).length;
+    const dueTodayRaw = sentences.filter((s) =>
+      isDueByCstDay(s.srs, now)
+    ).length;
+    const dueToday = Math.min(dueTodayRaw, DAILY_REVIEW_LIMIT);
     const next7 = sentences.filter((s) => {
-      const due = s.srs?.dueAt ?? 0;
-      return due >= todayStart && due < todayStart + 7 * dayMs;
+      if (!s.srs || s.srs.mastered) return false;
+      const dueAt = s.srs?.dueAt;
+      if (typeof dueAt !== "number" || !Number.isFinite(dueAt)) return false;
+      const dueDayStart = getCstDayStartMs(dueAt);
+      return dueDayStart >= todayStart && dueDayStart < todayStart + 7 * dayMs;
     }).length;
     const learned = sentences.filter((s) => (s.srs?.reps ?? 0) > 0).length;
     const mastered = sentences.filter((s) => s.srs?.mastered).length;
@@ -58,9 +75,10 @@ export default function Dashboard() {
   const barData = useMemo(() => {
     const counts = Array(7).fill(0);
     for (const s of sentences) {
-      const due = s.srs?.dueAt;
-      if (typeof due !== "number") continue;
-      const diff = Math.floor((due - todayStart) / dayMs);
+      const dueAt = s.srs?.dueAt;
+      if (typeof dueAt !== "number" || !Number.isFinite(dueAt)) continue;
+      const dueDayStart = getCstDayStartMs(dueAt);
+      const diff = Math.floor((dueDayStart - todayStart) / dayMs);
       if (diff >= 0 && diff < 7) counts[diff] += 1;
     }
     return counts;
@@ -68,9 +86,9 @@ export default function Dashboard() {
 
   const dueList = useMemo(() => {
     return sentences
-      .filter((s) => s.srs?.dueAt <= now)
+      .filter((s) => isDueByCstDay(s.srs, now))
       .sort((a, b) => (a.srs?.dueAt ?? 0) - (b.srs?.dueAt ?? 0))
-      .slice(0, 10);
+      .slice(0, Math.min(10, DAILY_REVIEW_LIMIT));
   }, [sentences, now]);
 
   const todayHistory = useMemo(() => {

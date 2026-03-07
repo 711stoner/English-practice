@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSentences } from "../hooks/useSentences.js";
 import { ensureSrs } from "../storage/sentencesStore.js";
-import { upsertToday } from "../storage/historyStore.js";
+import { getCstDateString, upsertToday } from "../storage/historyStore.js";
+import {
+  getFsrsDueAt,
+  getFsrsIntervalDays,
+  getFsrsLapses,
+  getFsrsLastReviewAt,
+  getFsrsReps,
+  rateFsrsCard,
+  ratingFromQuality,
+} from "../srs/fsrs.js";
 
 function normalizeForCompare(text) {
   return text
@@ -75,42 +84,9 @@ function getFuzzyMatchInfo(userText, answerText) {
   };
 }
 
-function applySm2(srs, q) {
-  let { intervalDays, ease, reps, lapses } = srs;
-
-  if (q < 3) {
-    reps = 0;
-    intervalDays = 1;
-    ease = Math.max(1.3, ease - 0.2);
-    lapses += 1;
-  } else {
-    reps += 1;
-    ease = ease + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02));
-    intervalDays =
-      reps === 1 ? 1 : reps === 2 ? 3 : Math.round(intervalDays * ease);
-  }
-
-  const dueAt = Date.now() + intervalDays * 24 * 60 * 60 * 1000;
-  return { dueAt, intervalDays, ease, reps, lapses };
-}
-
 const MASTERY_REPS = 8;
 const MASTERY_INTERVAL_DAYS = 730;
-
-function applySm2WithMastery(srs, q) {
-  const updated = applySm2(srs, q);
-  const mastered =
-    q >= 3 &&
-    updated.reps >= MASTERY_REPS &&
-    updated.intervalDays >= MASTERY_INTERVAL_DAYS;
-  return {
-    ...updated,
-    mastered,
-    masteredAt: mastered ? Date.now() : null,
-    lastReviewAt: Date.now(),
-    dueAt: mastered ? Number.POSITIVE_INFINITY : updated.dueAt,
-  };
-}
+const DAILY_REVIEW_LIMIT = 15;
 
 function shuffleArray(arr) {
   const a = [...arr];
@@ -125,6 +101,24 @@ function pickRandomId(list) {
   if (!list || list.length === 0) return null;
   const index = Math.floor(Math.random() * list.length);
   return list[index].id || null;
+}
+
+function isDueByCstDay(srs, now = Date.now()) {
+  if (!srs || srs.mastered) return false;
+  const dueAt = srs.dueAt;
+  if (typeof dueAt !== "number" || !Number.isFinite(dueAt)) return false;
+  const dueDate = getCstDateString(dueAt);
+  const today = getCstDateString(now);
+  return dueDate <= today;
+}
+
+function buildTodayQueueIds(sentences, now) {
+  return sentences
+    .filter((s) => isDueByCstDay(s.srs, now))
+    .sort((a, b) => (a.srs?.dueAt ?? 0) - (b.srs?.dueAt ?? 0))
+    .slice(0, DAILY_REVIEW_LIMIT)
+    .map((s) => s.id)
+    .filter(Boolean);
 }
 
 export default function Practice() {
@@ -146,8 +140,7 @@ export default function Practice() {
 
   useEffect(() => {
     const now = Date.now();
-    const due = sentences.filter((s) => (s.srs?.dueAt ?? now) <= now);
-    const ids = due.map((s) => s.id).filter(Boolean);
+    const ids = buildTodayQueueIds(sentences, now);
     setQueueIds(shuffleArray(ids));
   }, []);
 
@@ -222,8 +215,7 @@ export default function Practice() {
   function rebuildQueueFromStorage() {
     const latest = reload();
     const now = Date.now();
-    const due = latest.filter((s) => (s.srs?.dueAt ?? now) <= now);
-    const ids = due.map((s) => s.id).filter(Boolean);
+    const ids = buildTodayQueueIds(latest, now);
     setQueueIds(shuffleArray(ids));
   }
 
@@ -352,9 +344,36 @@ export default function Practice() {
   }
 
   function handleRate(q) {
+    const now = Date.now();
     const next = sentences.map((s) => {
       if (s.id !== current.id) return s;
-      const updatedSrs = applySm2WithMastery(ensureSrs(s).srs, q);
+      const base = ensureSrs(s).srs;
+      const rating = ratingFromQuality(q);
+      const updatedCard = rateFsrsCard(base.fsrs, rating, now);
+      const intervalDays = getFsrsIntervalDays(updatedCard);
+      const reps = getFsrsReps(updatedCard);
+      const lapses = getFsrsLapses(updatedCard);
+      const lastReviewAt = getFsrsLastReviewAt(updatedCard);
+      const mastered =
+        q >= 3 &&
+        reps >= MASTERY_REPS &&
+        intervalDays >= MASTERY_INTERVAL_DAYS;
+
+      const updatedSrs = {
+        ...base,
+        algorithm: "fsrs",
+        fsrs: updatedCard,
+        dueAt: getFsrsDueAt(updatedCard),
+        intervalDays,
+        reps,
+        lapses,
+        lastReviewAt,
+        stability: updatedCard.stability,
+        difficulty: updatedCard.difficulty,
+        mastered,
+        masteredAt: mastered ? now : base.masteredAt,
+      };
+
       return { ...s, srs: updatedSrs };
     });
     setSentences(next);
