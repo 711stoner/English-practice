@@ -74,17 +74,23 @@ export default function Dashboard() {
   }, [sentences, now, todayStart, dayMs]);
 
   const barData = useMemo(() => {
-    const counts = Array(7).fill(0);
+    const reviewCounts = Array(7).fill(0);
+    const newCounts = Array(7).fill(0);
     for (const s of sentences) {
       if (!s.srs || s.srs.mastered) continue;
-      if ((s.srs.reps ?? 0) <= 0) continue;
       const dueAt = s.srs?.dueAt;
       if (typeof dueAt !== "number" || !Number.isFinite(dueAt)) continue;
       const dueDayStart = getCstDayStartMs(dueAt);
       const diff = Math.floor((dueDayStart - todayStart) / dayMs);
-      if (diff >= 0 && diff < 7) counts[diff] += 1;
+      if (diff >= 0 && diff < 7) {
+        if ((s.srs.reps ?? 0) > 0) {
+          reviewCounts[diff] += 1;
+        } else {
+          newCounts[diff] += 1;
+        }
+      }
     }
-    return counts;
+    return { reviewCounts, newCounts };
   }, [sentences, todayStart, dayMs]);
 
   const dueList = useMemo(() => {
@@ -139,8 +145,11 @@ export default function Dashboard() {
     const chartWidth = width - padding * 2;
     const chartHeight = height - padding * 2;
 
-    const maxValue = Math.max(1, ...barData);
-    const barWidth = chartWidth / barData.length;
+    const maxValue = Math.max(
+      1,
+      ...barData.reviewCounts.map((v, i) => v + barData.newCounts[i])
+    );
+    const barWidth = chartWidth / barData.reviewCounts.length;
 
     ctx.fillStyle = "#f2f2f2";
     ctx.fillRect(0, 0, width, height);
@@ -152,21 +161,32 @@ export default function Dashboard() {
     ctx.lineTo(width - padding, height - padding);
     ctx.stroke();
 
-    for (let i = 0; i < barData.length; i += 1) {
-      const value = barData[i];
-      const barHeight = Math.round((value / maxValue) * (chartHeight - 8));
+    for (let i = 0; i < barData.reviewCounts.length; i += 1) {
+      const reviewValue = barData.reviewCounts[i];
+      const newValue = barData.newCounts[i];
+      const totalValue = reviewValue + newValue;
+      const totalHeight = Math.round((totalValue / maxValue) * (chartHeight - 8));
+      const reviewHeight = Math.round((reviewValue / maxValue) * (chartHeight - 8));
+      const newHeight = Math.round((newValue / maxValue) * (chartHeight - 8));
       const x = padding + i * barWidth + 8;
-      const y = height - padding - barHeight;
+      const y = height - padding - totalHeight;
       const w = barWidth - 16;
 
-      ctx.fillStyle = "#27ae60";
-      ctx.fillRect(x, y, w, barHeight);
+      if (newHeight > 0) {
+        ctx.fillStyle = "#f2c94c";
+        ctx.fillRect(x, y, w, newHeight);
+      }
+
+      if (reviewHeight > 0) {
+        ctx.fillStyle = "#27ae60";
+        ctx.fillRect(x, y + newHeight, w, reviewHeight);
+      }
 
       ctx.fillStyle = "#333";
       ctx.font = "12px Arial";
       ctx.fillText(`D${i}`, x + 2, height - padding + 14);
-      if (value > 0) {
-        ctx.fillText(String(value), x + 2, y - 4);
+      if (totalValue > 0) {
+        ctx.fillText(String(totalValue), x + 2, y - 4);
       }
     }
   }, [barData]);
@@ -222,7 +242,10 @@ export default function Dashboard() {
       </div>
 
       <div className="card">
-        <h3>未来7天计划复习柱状图（不含新学）</h3>
+        <h3>未来7天计划复习柱状图（新学 vs 复习）</h3>
+        <div style={{ marginBottom: 8, color: "#666" }}>
+          绿色：复习，黄色：新学
+        </div>
         <canvas ref={canvasRef} width={700} height={260} />
       </div>
 
