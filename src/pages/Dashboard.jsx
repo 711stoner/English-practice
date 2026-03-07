@@ -61,6 +61,7 @@ export default function Dashboard() {
     const dueToday = Math.min(dueTodayRaw, DAILY_REVIEW_LIMIT);
     const next7 = sentences.filter((s) => {
       if (!s.srs || s.srs.mastered) return false;
+      if ((s.srs.reps ?? 0) <= 0) return false;
       const dueAt = s.srs?.dueAt;
       if (typeof dueAt !== "number" || !Number.isFinite(dueAt)) return false;
       const dueDayStart = getCstDayStartMs(dueAt);
@@ -75,6 +76,8 @@ export default function Dashboard() {
   const barData = useMemo(() => {
     const counts = Array(7).fill(0);
     for (const s of sentences) {
+      if (!s.srs || s.srs.mastered) continue;
+      if ((s.srs.reps ?? 0) <= 0) continue;
       const dueAt = s.srs?.dueAt;
       if (typeof dueAt !== "number" || !Number.isFinite(dueAt)) continue;
       const dueDayStart = getCstDayStartMs(dueAt);
@@ -182,7 +185,7 @@ export default function Dashboard() {
             <strong style={{ fontSize: 24 }}>{stats.dueToday}</strong>
           </div>
           <div className="card" style={{ minWidth: 160 }}>
-            <div>未来7天计划复习</div>
+            <div>未来7天计划复习（不含新学）</div>
             <strong style={{ fontSize: 24 }}>{stats.next7}</strong>
           </div>
           <div className="card" style={{ minWidth: 160 }}>
@@ -219,7 +222,7 @@ export default function Dashboard() {
       </div>
 
       <div className="card">
-        <h3>未来7天计划复习柱状图</h3>
+        <h3>未来7天计划复习柱状图（不含新学）</h3>
         <canvas ref={canvasRef} width={700} height={260} />
       </div>
 
