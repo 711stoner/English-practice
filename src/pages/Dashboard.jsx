@@ -184,7 +184,7 @@ export default function Dashboard() {
 
       ctx.fillStyle = "#333";
       ctx.font = "12px Arial";
-      ctx.fillText(`D${i}`, x + 2, height - padding + 14);
+      ctx.fillText(`D${i + 1}`, x + 2, height - padding + 14);
       if (totalValue > 0) {
         ctx.fillText(String(totalValue), x + 2, y - 4);
       }
