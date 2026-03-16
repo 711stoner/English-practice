@@ -59,7 +59,7 @@ function normalizeStatsDate(date) {
   return date;
 }
 
-const DAILY_REVIEW_LIMIT = 15;
+const REVIEW_LIST_LIMIT = 10;
 
 export default function Dashboard() {
   const { sentences } = useSentences();
@@ -73,15 +73,17 @@ export default function Dashboard() {
 
   const stats = useMemo(() => {
     const total = sentences.length;
-    const dueTodayRaw = sentences.filter((s) => isDueByCstDay(s.srs)).length;
-    const dueToday = Math.min(dueTodayRaw, DAILY_REVIEW_LIMIT);
+    const dueToday = sentences.filter((s) => isDueByCstDay(s.srs)).length;
     const next7Due = sentences.filter((s) => {
       if (!s.srs || s.srs.mastered) return false;
       if ((s.srs.reps ?? 0) <= 0) return false;
       const dueAt = s.srs?.dueAt;
       if (typeof dueAt !== "number" || !Number.isFinite(dueAt)) return false;
       const dueDayStart = getCstDayStartMs(dueAt);
-      return dueDayStart >= todayStart && dueDayStart < todayStart + 7 * dayMs;
+      return (
+        dueDayStart >= todayStart + dayMs &&
+        dueDayStart < todayStart + 8 * dayMs
+      );
     }).length;
     const learned = sentences.filter((s) => (s.srs?.reps ?? 0) > 0).length;
     const mastered = sentences.filter((s) => s.srs?.mastered).length;
@@ -93,7 +95,7 @@ export default function Dashboard() {
     return sentences
       .filter((s) => isDueByCstDay(s.srs))
       .sort((a, b) => (a.srs?.dueAt ?? 0) - (b.srs?.dueAt ?? 0))
-      .slice(0, Math.min(10, DAILY_REVIEW_LIMIT));
+      .slice(0, REVIEW_LIST_LIMIT);
   }, [sentences]);
 
   const dueTotalCount = useMemo(() => {
@@ -175,37 +177,37 @@ export default function Dashboard() {
             <strong style={{ fontSize: 24 }}>{stats.total}</strong>
           </div>
           <div className="card" style={{ minWidth: 160 }}>
-            <div>今日到期</div>
+            <div>今日待复习</div>
             <strong style={{ fontSize: 24 }}>{stats.dueToday}</strong>
           </div>
           <div className="card" style={{ minWidth: 160 }}>
-            <div>7天内到期复习</div>
+            <div>未来7天待复习</div>
             <strong style={{ fontSize: 24 }}>{stats.next7Due}</strong>
           </div>
           <div className="card" style={{ minWidth: 160 }}>
-            <div>已学（reps&gt;0）</div>
+            <div>已进入复习</div>
             <strong style={{ fontSize: 24 }}>{stats.learned}</strong>
           </div>
           <div className="card" style={{ minWidth: 160 }}>
-            <div>已掌握（暂停复习）</div>
+            <div>已掌握</div>
             <strong style={{ fontSize: 24 }}>{stats.mastered}</strong>
           </div>
         </div>
       </div>
 
       <div className="card">
-        <h3>今日学习记录</h3>
+        <h3>今日学习数据</h3>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           <div className="card" style={{ minWidth: 160 }}>
-            <div>今日复习完成</div>
+            <div>今日已复习</div>
             <strong style={{ fontSize: 24 }}>{todayHistory.reviewedCount || 0}</strong>
           </div>
           <div className="card" style={{ minWidth: 160 }}>
-            <div>今日新增句子</div>
+            <div>今日新学</div>
             <strong style={{ fontSize: 24 }}>{todayHistory.newCount || 0}</strong>
           </div>
           <div className="card" style={{ minWidth: 160 }}>
-            <div>今日学习时长</div>
+            <div>今日有效学习时长</div>
             <strong style={{ fontSize: 24 }}>{formatDuration(todayHistory.durationSeconds || 0)}</strong>
           </div>
           <div className="card" style={{ minWidth: 160 }}>
@@ -260,7 +262,7 @@ export default function Dashboard() {
       </div>
 
       <div className="card">
-        <h3>今日待复习（最多10条）</h3>
+        <h3>今日待复习（最多{REVIEW_LIST_LIMIT}条）</h3>
         {dueList.length === 0 && <p>今日暂无待复习内容</p>}
         {dueList.map((s) => (
           <div key={s.id} className="card">

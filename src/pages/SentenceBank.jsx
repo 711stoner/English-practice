@@ -2,7 +2,6 @@ import { useState } from "react";
 import * as XLSX from "xlsx";
 import { useSentences } from "../hooks/useSentences.js";
 import { createSentence, makeId, ensureSrs } from "../storage/sentencesStore.js";
-import { recordDailyNewCount } from "../storage/historyStore.js";
 
 export default function SentenceBank() {
   const { sentences, setSentences } = useSentences();
@@ -32,7 +31,6 @@ export default function SentenceBank() {
 
     const next = [sentence, ...sentences];
     setSentences(next);
-    recordDailyNewCount(1);
 
     setText("");
     setMeaning("");
@@ -136,7 +134,6 @@ export default function SentenceBank() {
     if (toAdd.length > 0) {
       const next = [...toAdd, ...sentences];
       setSentences(next);
-      recordDailyNewCount(added);
     }
 
     setBulkResult({
@@ -219,7 +216,6 @@ export default function SentenceBank() {
       if (toAdd && toAdd.length > 0) {
         const next = [...toAdd, ...sentences];
         setSentences(next);
-        recordDailyNewCount(added);
       }
 
       setExcelResult({
@@ -505,7 +501,7 @@ export default function SentenceBank() {
             </div>
             {s.srs?.mastered && (
               <div style={{ marginTop: 6, color: "#2c7a3f" }}>
-                已掌握（暂停复习）
+                已掌握
               </div>
             )}
             <button className="button delete" onClick={() => handleDelete(s.id)}>

@@ -7,6 +7,7 @@ import {
   judgeSessionPass,
   loadHistory,
   markDailyCheckin,
+  recordDailyNewPractice,
   recordDailyReviewCount,
   resetStudyActivityMarker,
   markStudyActivity,
@@ -173,6 +174,7 @@ export default function Practice() {
 
   const fuzzyFirstPassIdsRef = useRef(new Set());
   const reinforcementInsertedRef = useRef(new Set());
+  const startedNewInSessionRef = useRef(new Set());
   const isWindowActiveRef = useRef(
     typeof document !== "undefined" ? document.visibilityState === "visible" : true
   );
@@ -215,6 +217,7 @@ export default function Practice() {
 
     fuzzyFirstPassIdsRef.current.clear();
     reinforcementInsertedRef.current.clear();
+    startedNewInSessionRef.current.clear();
     resetStudyActivityMarker();
 
     if (options.showMessage) {
@@ -313,13 +316,21 @@ export default function Practice() {
     }
   }, [current?.id, submitted]);
 
-  function markActiveStudy() {
+  function markActiveStudy(options = {}) {
+    const { trackNewStart = false } = options;
     if (!isWindowActiveRef.current) return;
     markStudyActivity({ maxGapSeconds: 30 });
+
+    if (!trackNewStart) return;
+    if (isRandomMode || !current?.id) return;
+    if (idMeta[current.id]?.type !== "new") return;
+    if (startedNewInSessionRef.current.has(current.id)) return;
+
+    startedNewInSessionRef.current.add(current.id);
+    recordDailyNewPractice(current.id);
   }
 
   function rebuildQueueFromStorage() {
-    markActiveStudy();
     const latest = reload();
     setIsRandomMode(false);
     setRandomId(null);
@@ -328,7 +339,6 @@ export default function Practice() {
   }
 
   function enterRandomMode() {
-    markActiveStudy();
     setIsRandomMode(true);
     setRandomId(pickRandomId(sentences));
     resetPracticeState();
@@ -336,7 +346,6 @@ export default function Practice() {
   }
 
   function exitRandomMode() {
-    markActiveStudy();
     setIsRandomMode(false);
     setRandomId(null);
     resetPracticeState();
@@ -456,7 +465,7 @@ export default function Practice() {
   }
 
   function submitAnswer() {
-    markActiveStudy();
+    markActiveStudy({ trackNewStart: true });
     if (submitted) return;
 
     if (!input.trim()) {
@@ -521,7 +530,7 @@ export default function Practice() {
   }
 
   function handleNext() {
-    markActiveStudy();
+    markActiveStudy({ trackNewStart: true });
     if (isRandomMode) {
       setRandomId(pickRandomId(sentences));
       resetPracticeState();
@@ -573,7 +582,7 @@ export default function Practice() {
   }
 
   function handleRate(q) {
-    markActiveStudy();
+    markActiveStudy({ trackNewStart: true });
     const now = Date.now();
     const currentId = current.id;
 
@@ -702,6 +711,7 @@ export default function Practice() {
           rows={4}
           value={input}
           onChange={(e) => {
+            markActiveStudy({ trackNewStart: true });
             setInput(e.target.value);
             if (inputError) setInputError("");
           }}
@@ -728,7 +738,10 @@ export default function Practice() {
               <button
                 className="button secondary"
                 type="button"
-                onClick={() => setShowHint(true)}
+                onClick={() => {
+                  markActiveStudy({ trackNewStart: true });
+                  setShowHint(true);
+                }}
               >
                 查看提示
               </button>

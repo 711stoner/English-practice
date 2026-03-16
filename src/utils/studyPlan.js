@@ -104,7 +104,7 @@ function calcProtectionReduction({
   if (yesterdayFailRate >= 0.25) triggered.push("昨日失败率偏高");
   if (recent3AvgPassRate < 0.55) triggered.push("近3日通过率偏低");
   if (overdueCount >= 6) triggered.push("逾期积压较多");
-  if (todayDurationSeconds >= 45 * 60) triggered.push("今日学习时长已较高");
+  if (todayDurationSeconds >= 45 * 60) triggered.push("今日有效学习时长已较高");
   if (sessionSkipUniqueCount >= 3) triggered.push("本轮不会句偏多");
 
   const reduction = clamp(triggered.length >= 2 ? 2 : triggered.length, 0, 2);
