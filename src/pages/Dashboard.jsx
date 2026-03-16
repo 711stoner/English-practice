@@ -4,10 +4,14 @@ import { useHistory } from "../hooks/useHistory.js";
 import {
   getCstDateString,
   getCstDayStartMs,
+  getConsecutiveCheckinDays,
+  getTodayLearningStatsOrEmpty,
   loadLearningStats,
 } from "../storage/historyStore.js";
 import {
   ensureLearningStatsFile,
+  hasAnyLearningStatsRecords,
+  selectRecentLearningStatsRows,
   subscribeLearningStats,
 } from "../storage/learningStatsStore.js";
 import {
@@ -24,16 +28,6 @@ function formatDuration(seconds) {
     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
   }
   return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
-}
-
-function shiftDateStr(dateStr, deltaDays) {
-  const parts = dateStr.split("-");
-  const y = Number(parts[0]);
-  const m = Number(parts[1]) - 1;
-  const d = Number(parts[2]);
-  const base = Date.UTC(y, m, d, -1);
-  const ts = base + deltaDays * 24 * 60 * 60 * 1000;
-  return getCstDateString(ts);
 }
 
 function isDueByCstDay(srs, now = Date.now()) {
@@ -108,32 +102,11 @@ export default function Dashboard() {
   }, [sentences]);
 
   const todayHistory = useMemo(() => {
-    const today = getCstDateString();
-    return (
-      history.find((d) => d.date === today) || {
-        reviewedCount: 0,
-        newCount: 0,
-        durationSeconds: 0,
-        checkedIn: false,
-      }
-    );
+    return getTodayLearningStatsOrEmpty(history);
   }, [history]);
 
   const streakDays = useMemo(() => {
-    const map = new Map(history.map((d) => [d.date, d]));
-    const today = getCstDateString();
-    const todayRecord = map.get(today);
-    if (!todayRecord?.checkedIn) return 0;
-
-    let streak = 0;
-    let cursor = today;
-    while (true) {
-      const record = map.get(cursor);
-      if (!record?.checkedIn) break;
-      streak += 1;
-      cursor = shiftDateStr(cursor, -1);
-    }
-    return streak;
+    return getConsecutiveCheckinDays(history);
   }, [history]);
 
   useEffect(() => {
@@ -167,10 +140,42 @@ export default function Dashboard() {
     };
   }, []);
 
+  const hasAnyStats = useMemo(
+    () => hasAnyLearningStatsRecords(learningStats),
+    [learningStats]
+  );
+
+  const recentStatsRows = useMemo(
+    () => selectRecentLearningStatsRows(learningStats, { days: 7, fillMissingDays: true }),
+    [learningStats]
+  );
+
+  const recentHasAnyRecord = useMemo(
+    () => recentStatsRows.some((row) => row.has_record),
+    [recentStatsRows]
+  );
+
+  const recentDateSet = useMemo(
+    () => new Set(recentStatsRows.map((row) => row.date)),
+    [recentStatsRows]
+  );
+
+  const olderHistoryRows = useMemo(
+    () => learningStats.filter((row) => !recentDateSet.has(row.date)),
+    [learningStats, recentDateSet]
+  );
+
   const visibleStats = useMemo(() => {
-    if (showAllStats) return learningStats;
-    return learningStats.slice(0, 7);
-  }, [learningStats, showAllStats]);
+    if (showAllStats) {
+      return learningStats.map((row) => ({ ...row, has_record: true }));
+    }
+    return recentStatsRows;
+  }, [learningStats, recentStatsRows, showAllStats]);
+
+  const todayStatsDate = useMemo(
+    () => normalizeStatsDate(todayHistory.date),
+    [todayHistory.date]
+  );
 
   return (
     <div>
@@ -265,33 +270,50 @@ export default function Dashboard() {
       <div className="card">
         <h3>学习情况数据</h3>
         {statsLoading && <p>加载中...</p>}
-        {!statsLoading && learningStats.length === 0 && <p>暂无学习情况数据</p>}
+        {!statsLoading && !hasAnyStats && <p>暂无学习情况数据</p>}
 
-        {!statsLoading && learningStats.length > 0 && (
+        {!statsLoading && hasAnyStats && (
           <>
+            {!showAllStats && !recentHasAnyRecord && (
+              <p style={{ color: "#666" }}>最近7天暂无学习记录，可查看更早历史数据</p>
+            )}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8 }}>
               <strong>日期</strong>
               <strong>打卡情况</strong>
               <strong>新学句子数</strong>
               <strong>复习句子数</strong>
-              {visibleStats.map((row) => (
-                <div key={row.date} style={{ display: "contents" }}>
-                  <div>{normalizeStatsDate(row.date)}</div>
-                  <div>{row.checkin_status || "未打卡"}</div>
-                  <div>{row.new_count || 0}</div>
-                  <div>{row.review_count || 0}</div>
-                </div>
-              ))}
+              {visibleStats.map((row) => {
+                const rowDate = normalizeStatsDate(row.date);
+                const isTodayRow = rowDate === todayStatsDate;
+                const checkinStatus = isTodayRow
+                  ? todayHistory.checkedIn
+                    ? "已打卡"
+                    : "未打卡"
+                  : row.checkin_status || "未打卡";
+                const newCount = isTodayRow ? todayHistory.newCount || 0 : row.new_count || 0;
+                const reviewCount = isTodayRow
+                  ? todayHistory.reviewedCount || 0
+                  : row.review_count || 0;
+
+                return (
+                  <div key={row.date} style={{ display: "contents" }}>
+                    <div>{rowDate}</div>
+                    <div>{checkinStatus}</div>
+                    <div>{newCount}</div>
+                    <div>{reviewCount}</div>
+                  </div>
+                );
+              })}
             </div>
 
-            {learningStats.length > 7 && (
+            {olderHistoryRows.length > 0 && (
               <div style={{ marginTop: 12 }}>
                 <button
                   className="button"
                   type="button"
                   onClick={() => setShowAllStats((v) => !v)}
                 >
-                  {showAllStats ? "收起" : "更多"}
+                  {showAllStats ? "收起" : "查看更多历史记录"}
                   <span className="paw" />
                 </button>
               </div>

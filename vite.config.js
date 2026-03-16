@@ -64,6 +64,28 @@ function normalizeRecord(input) {
   };
 }
 
+function toRecordList(source) {
+  if (Array.isArray(source)) return source;
+  if (!source || typeof source !== "object") return [];
+  const entries = Object.entries(source).filter(
+    ([, item]) => item && typeof item === "object"
+  );
+  const values = entries.map(([, item]) => item);
+  if (values.length === 0) return [];
+  const hasDateLike = values.some((item) => typeof item.date === "string");
+  if (hasDateLike) return values;
+
+  const keyedByDate = entries.every(([key]) =>
+    /^\d{6}$/.test(String(key)) || /^\d{4}-\d{2}-\d{2}$/.test(String(key))
+  );
+  if (!keyedByDate) return [];
+
+  return entries.map(([key, item]) => ({
+    date: String(key),
+    ...item,
+  }));
+}
+
 function sortByDateDesc(records) {
   return [...records].sort((a, b) => b.date.localeCompare(a.date));
 }
@@ -94,9 +116,9 @@ async function readLearningStatsFile() {
 
   try {
     const parsed = JSON.parse(raw);
-    const records = Array.isArray(parsed?.records)
-      ? parsed.records.map(normalizeRecord).filter(Boolean)
-      : [];
+    const records = toRecordList(parsed?.records)
+      .map(normalizeRecord)
+      .filter(Boolean);
 
     return {
       version: 1,

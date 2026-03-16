@@ -1,6 +1,8 @@
 const STORAGE_KEY = "learning_stats";
 const CHANGE_EVENT = "learning-stats-changed";
 const API_BASE = "/api/learning-stats";
+const TIME_ZONE = "Asia/Shanghai";
+const DAY_START_HOUR = 7;
 
 function safeParse(json) {
   try {
@@ -36,6 +38,30 @@ function toIsoString(value, fallbackIso) {
   return fallbackIso;
 }
 
+function toRecordList(source) {
+  if (Array.isArray(source)) return source;
+  if (!source || typeof source !== "object") return [];
+
+  const entries = Object.entries(source).filter(
+    ([, item]) => item && typeof item === "object"
+  );
+  const values = entries.map(([, item]) => item);
+  if (values.length === 0) return [];
+
+  const hasDateLike = values.some((item) => typeof item.date === "string");
+  if (hasDateLike) return values;
+
+  const keyedByDate = entries.every(([key]) =>
+    /^\d{6}$/.test(String(key)) || /^\d{4}-\d{2}-\d{2}$/.test(String(key))
+  );
+  if (!keyedByDate) return [];
+
+  return entries.map(([key, item]) => ({
+    date: String(key),
+    ...item,
+  }));
+}
+
 export function toLearningStatsDate(dateValue) {
   if (typeof dateValue !== "string") return "";
   const raw = dateValue.trim();
@@ -54,6 +80,23 @@ export function toLearningStatsDate(dateValue) {
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}${month}${day}`;
+}
+
+export function getLearningStatsTodayKey(ts = Date.now()) {
+  const shifted = ts - DAY_START_HOUR * 60 * 60 * 1000;
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date(shifted));
+
+  const map = {};
+  for (const p of parts) {
+    if (p.type !== "literal") map[p.type] = p.value;
+  }
+  const year = (map.year || "").slice(2);
+  return `${year}${map.month}${map.day}`;
 }
 
 function defaultRecord(date, nowIso) {
@@ -112,12 +155,30 @@ function sortByDateDesc(records) {
 }
 
 function recordsFromPayload(payload) {
-  const list = Array.isArray(payload?.records)
-    ? payload.records
-    : Array.isArray(payload)
-      ? payload
-      : [];
+  const fromRecords = toRecordList(payload?.records);
+  const fromPayload = toRecordList(payload);
+  const list = fromRecords.length > 0 ? fromRecords : fromPayload;
   return sortByDateDesc(list.map(normalizeRecord).filter(Boolean));
+}
+
+function shiftLearningDateKey(dateKey, deltaDays) {
+  if (!/^\d{6}$/.test(dateKey)) return dateKey;
+  const yy = Number(dateKey.slice(0, 2));
+  const mm = Number(dateKey.slice(2, 4));
+  const dd = Number(dateKey.slice(4, 6));
+  const base = new Date(Date.UTC(2000 + yy, mm - 1, dd + deltaDays));
+  const y = String(base.getUTCFullYear()).slice(2);
+  const m = String(base.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(base.getUTCDate()).padStart(2, "0");
+  return `${y}${m}${d}`;
+}
+
+function buildRecentDateKeys(days = 7, ts = Date.now()) {
+  const count = Math.max(1, Math.floor(days));
+  const todayKey = getLearningStatsTodayKey(ts);
+  return Array.from({ length: count }, (_, idx) =>
+    shiftLearningDateKey(todayKey, -idx)
+  );
 }
 
 function notifyChanged() {
@@ -151,8 +212,10 @@ async function upsertRemoteRecord(record) {
 export function loadLearningStats() {
   const raw = localStorage.getItem(STORAGE_KEY);
   const data = safeParse(raw);
-  if (!Array.isArray(data)) return [];
-  return sortByDateDesc(data.map(normalizeRecord).filter(Boolean));
+  const fromRecords = toRecordList(data?.records);
+  const fromPayload = toRecordList(data);
+  const list = fromRecords.length > 0 ? fromRecords : fromPayload;
+  return sortByDateDesc(list.map(normalizeRecord).filter(Boolean));
 }
 
 export function saveLearningStats(records) {
@@ -302,6 +365,47 @@ export function showLearningStats(options = {}) {
   return records.slice(0, Math.max(0, limit));
 }
 
+export function selectRecentLearningStatsRows(
+  records = loadLearningStats(),
+  options = {}
+) {
+  const { days = 7, ts = Date.now(), fillMissingDays = true } = options;
+  const normalizedRecords = sortByDateDesc(
+    toRecordList(records).map(normalizeRecord).filter(Boolean)
+  );
+  const dateKeys = buildRecentDateKeys(days, ts);
+  const map = new Map(normalizedRecords.map((row) => [row.date, row]));
+
+  if (!fillMissingDays) {
+    return dateKeys
+      .map((date) => map.get(date))
+      .filter(Boolean)
+      .map((row) => ({ ...row, has_record: true }));
+  }
+
+  const nowIso = new Date(ts).toISOString();
+  return dateKeys.map((date) => {
+    const found = map.get(date);
+    if (found) return { ...found, has_record: true };
+    return { ...defaultRecord(date, nowIso), has_record: false };
+  });
+}
+
+export function hasAnyLearningStatsRecords(records = loadLearningStats()) {
+  return toRecordList(records).map(normalizeRecord).filter(Boolean).length > 0;
+}
+
+export function getTodayLearningStatsOrEmpty(records = loadLearningStats(), ts = Date.now()) {
+  const todayKey = getLearningStatsTodayKey(ts);
+  const list = Array.isArray(records) ? records : [];
+  const found = list.find((item) => item?.date === todayKey);
+  if (found) {
+    const normalized = normalizeRecord(found);
+    if (normalized) return normalized;
+  }
+  return defaultRecord(todayKey, new Date(ts).toISOString());
+}
+
 export async function syncHistoryDayToLearningStats(day) {
   if (!day || typeof day !== "object") return null;
   const date = toLearningStatsDate(day.date);
@@ -311,11 +415,15 @@ export async function syncHistoryDayToLearningStats(day) {
   const passCount = normalizeCount(day.passCount);
   const fuzzyCount = normalizeCount(day.fuzzyCount);
   const failCount = normalizeCount(day.failCount);
+  const checkedIn =
+    Boolean(day.checkedIn) &&
+    typeof day.checkinAt === "number" &&
+    Number.isFinite(day.checkinAt);
 
   return upsertDailyLearningStats({
     date,
-    checked_in: Boolean(day.checkedIn),
-    checkin_status: day.checkedIn ? "已打卡" : "未打卡",
+    checked_in: checkedIn,
+    checkin_status: checkedIn ? "已打卡" : "未打卡",
     new_count: normalizeCount(day.newCount),
     review_count: reviewCount,
     study_seconds: normalizeCount(day.durationSeconds),

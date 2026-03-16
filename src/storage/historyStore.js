@@ -59,6 +59,8 @@ function defaultDay(date) {
     newCount: 0,
     newPracticedIds: [],
     durationSeconds: 0,
+    activityCount: 0,
+    lastStudyActiveAt: null,
     passCount: 0,
     fuzzyCount: 0,
     failCount: 0,
@@ -94,13 +96,83 @@ function normalizeIdList(value) {
   return Array.from(unique);
 }
 
+function normalizeHistoryDate(value) {
+  if (typeof value !== "string") return "";
+  const raw = value.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const short = raw.match(/^(\d{2})(\d{2})(\d{2})$/);
+  if (short) {
+    return `20${short[1]}-${short[2]}-${short[3]}`;
+  }
+  return "";
+}
+
+function shiftDateStr(dateStr, deltaDays) {
+  const parts = dateStr.split("-");
+  const y = Number(parts[0]);
+  const m = Number(parts[1]) - 1;
+  const d = Number(parts[2]);
+  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) {
+    return dateStr;
+  }
+  const base = Date.UTC(y, m, d, -1);
+  const ts = base + deltaDays * 24 * 60 * 60 * 1000;
+  return getCstDateString(ts);
+}
+
+function isStrictCheckedIn(day) {
+  return Boolean(
+    day?.checkedIn &&
+      typeof day?.checkinAt === "number" &&
+      Number.isFinite(day.checkinAt)
+  );
+}
+
+function hasReviewActivity(day) {
+  const reviewed = normalizeCount(day?.reviewedCount);
+  const pass = normalizeCount(day?.passCount);
+  const fuzzy = normalizeCount(day?.fuzzyCount);
+  const fail = normalizeCount(day?.failCount);
+  return reviewed > 0 || pass > 0 || fuzzy > 0 || fail > 0;
+}
+
+function hasTrackedNewPractice(day) {
+  return normalizeIdList(day?.newPracticedIds).length > 0;
+}
+
+function hasTrackedStudyActivity(day) {
+  const activityCount = normalizeCount(day?.activityCount);
+  const lastStudyActiveAt =
+    typeof day?.lastStudyActiveAt === "number" &&
+    Number.isFinite(day.lastStudyActiveAt)
+      ? day.lastStudyActiveAt
+      : null;
+  return activityCount > 0 || lastStudyActiveAt != null;
+}
+
+function isLikelyLegacyGhostToday(day, today) {
+  if (!day || day.date !== today) return false;
+  const checkedIn = Boolean(day.checkedIn);
+  const newCount = normalizeCount(day.newCount);
+  const durationSeconds = normalizeCount(day.durationSeconds);
+
+  const hasSignals =
+    isStrictCheckedIn(day) ||
+    hasReviewActivity(day) ||
+    hasTrackedNewPractice(day) ||
+    hasTrackedStudyActivity(day);
+
+  if (hasSignals) return false;
+  return checkedIn || newCount > 0 || durationSeconds > 0;
+}
+
 function normalizeDay(day, fallbackDate) {
   const base = day && typeof day === "object" ? day : {};
-  const date = typeof base.date === "string" ? base.date : fallbackDate;
+  const date = normalizeHistoryDate(base.date) || normalizeHistoryDate(fallbackDate);
+  if (!date) return null;
   const now = Date.now();
   const reviewedCount = normalizeCount(base.reviewedCount);
   const durationSeconds = normalizeCount(base.durationSeconds);
-  const legacyAutoCheckin = reviewedCount > 0 || durationSeconds >= 60;
 
   return {
     ...base,
@@ -109,6 +181,12 @@ function normalizeDay(day, fallbackDate) {
     newCount: normalizeCount(base.newCount),
     newPracticedIds: normalizeIdList(base.newPracticedIds),
     durationSeconds,
+    activityCount: normalizeCount(base.activityCount),
+    lastStudyActiveAt:
+      typeof base.lastStudyActiveAt === "number" &&
+      Number.isFinite(base.lastStudyActiveAt)
+        ? base.lastStudyActiveAt
+        : null,
     passCount: normalizeCount(base.passCount),
     fuzzyCount: normalizeCount(base.fuzzyCount),
     failCount: normalizeCount(base.failCount),
@@ -117,8 +195,7 @@ function normalizeDay(day, fallbackDate) {
       : reviewedCount > 0
         ? normalizeCount(base.passCount) / reviewedCount
         : 0,
-    checkedIn:
-      typeof base.checkedIn === "boolean" ? base.checkedIn : legacyAutoCheckin,
+    checkedIn: typeof base.checkedIn === "boolean" ? base.checkedIn : false,
     checkinAt:
       typeof base.checkinAt === "number" && Number.isFinite(base.checkinAt)
         ? base.checkinAt
@@ -134,14 +211,26 @@ function normalizeDay(day, fallbackDate) {
   };
 }
 
+function normalizeHistoryList(list) {
+  if (!Array.isArray(list)) return [];
+  const byDate = new Map();
+
+  for (const item of list) {
+    const normalized = normalizeDay(item, "");
+    if (!normalized) continue;
+    const prev = byDate.get(normalized.date);
+    if (!prev || (normalized.updatedAt || 0) >= (prev.updatedAt || 0)) {
+      byDate.set(normalized.date, normalized);
+    }
+  }
+
+  return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
+}
+
 export function loadHistory() {
   const raw = localStorage.getItem(STORAGE_KEY);
   const data = safeParse(raw);
-  if (Array.isArray(data)) {
-    return data
-      .map((d) => normalizeDay(d, getCstDateString()))
-      .filter((d) => typeof d.date === "string");
-  }
+  if (Array.isArray(data)) return normalizeHistoryList(data);
   return [];
 }
 
@@ -201,11 +290,17 @@ export function upsertToday(patchFn, options = {}) {
 
   const base =
     index >= 0 ? normalizeDay(history[index], today) : defaultDay(today);
+  if (!base) {
+    return defaultDay(today);
+  }
   const patched = patchFn ? patchFn({ ...base }) : base;
   const nextDay = normalizeDay(
     patched && typeof patched === "object" ? patched : base,
     today
   );
+  if (!nextDay) {
+    return base;
+  }
   nextDay.createdAt = base.createdAt || nextDay.createdAt;
   nextDay.updatedAt = Date.now();
 
@@ -218,7 +313,10 @@ export function upsertToday(patchFn, options = {}) {
 
   saveHistory(nextHistory);
   if (syncLearningStats) {
-    void syncHistoryDayToLearningStats(nextDay);
+    void syncHistoryDayToLearningStats({
+      ...nextDay,
+      checkedIn: isStrictCheckedIn(nextDay),
+    });
   }
   return nextDay;
 }
@@ -325,7 +423,11 @@ export function markStudyActivity(options = {}) {
 
   if (!marker || marker.date !== today || !Number.isFinite(marker.lastActiveAt)) {
     saveActivityMarker({ date: today, lastActiveAt: ts });
-    upsertToday((day) => ({ ...day }));
+    upsertToday((day) => ({
+      ...day,
+      activityCount: (day.activityCount || 0) + 1,
+      lastStudyActiveAt: ts,
+    }));
     return 0;
   }
 
@@ -333,9 +435,12 @@ export function markStudyActivity(options = {}) {
   const gained = Math.max(0, Math.min(maxGapSeconds, deltaSec));
 
   saveActivityMarker({ date: today, lastActiveAt: ts });
-  if (gained > 0) {
-    addStudySeconds(gained);
-  }
+  upsertToday((day) => ({
+    ...day,
+    activityCount: (day.activityCount || 0) + 1,
+    lastStudyActiveAt: ts,
+    durationSeconds: (day.durationSeconds || 0) + (gained > 0 ? gained : 0),
+  }));
   return gained;
 }
 
@@ -353,7 +458,15 @@ export function getRecentLearningStats(days = 7) {
 export function getTodayLearningStats() {
   const today = getCstDateString();
   const day = loadHistory().find((item) => item.date === today);
-  return normalizeDay(day || defaultDay(today), today);
+  const normalized = normalizeDay(day || defaultDay(today), today);
+  if (!normalized) return defaultDay(today);
+  if (isLikelyLegacyGhostToday(normalized, today)) {
+    return defaultDay(today);
+  }
+  return {
+    ...normalized,
+    checkedIn: isStrictCheckedIn(normalized),
+  };
 }
 
 export function getDashboardStats() {
@@ -363,7 +476,7 @@ export function getDashboardStats() {
     reviewed_count: today.reviewedCount || 0,
     new_count: today.newCount || 0,
     study_seconds: today.durationSeconds || 0,
-    checked_in: Boolean(today.checkedIn),
+    checked_in: isStrictCheckedIn(today),
     pass_count: today.passCount || 0,
     fuzzy_count: today.fuzzyCount || 0,
     fail_count: today.failCount || 0,
@@ -371,9 +484,69 @@ export function getDashboardStats() {
 }
 
 export function hasCheckedInToday() {
+  const today = getTodayLearningStats();
+  return isStrictCheckedIn(today);
+}
+
+export function getTodayLearningStatsOrEmpty(history = loadHistory(), ts = Date.now()) {
+  const today = getCstDateString(ts);
+  const day = Array.isArray(history)
+    ? history.find((item) => item?.date === today)
+    : null;
+  const normalized = normalizeDay(day || defaultDay(today), today);
+  if (!normalized) return defaultDay(today);
+  if (isLikelyLegacyGhostToday(normalized, today)) {
+    return defaultDay(today);
+  }
+  return {
+    ...normalized,
+    checkedIn: isStrictCheckedIn(normalized),
+  };
+}
+
+export function getConsecutiveCheckinDays(history = loadHistory(), ts = Date.now()) {
+  const today = getCstDateString(ts);
+  const map = new Map(
+    (Array.isArray(history) ? history : []).map((d) => {
+      const normalized = normalizeDay(d, "");
+      return normalized ? [normalized.date, normalized] : null;
+    }).filter(Boolean)
+  );
+
+  const todayRecord = map.get(today);
+  if (!isStrictCheckedIn(todayRecord)) return 0;
+
+  let streak = 0;
+  let cursor = today;
+  while (true) {
+    const record = map.get(cursor);
+    if (!isStrictCheckedIn(record)) break;
+    streak += 1;
+    cursor = shiftDateStr(cursor, -1);
+  }
+
+  return streak;
+}
+
+export function clearTodayGhostStats() {
   const today = getCstDateString();
-  const day = loadHistory().find((d) => d.date === today);
-  return Boolean(day?.checkedIn);
+  const history = loadHistory();
+  const index = history.findIndex((d) => d.date === today);
+  if (index < 0) return false;
+
+  const normalized = normalizeDay(history[index], today);
+  if (!normalized || !isLikelyLegacyGhostToday(normalized, today)) return false;
+
+  const cleaned = {
+    ...defaultDay(today),
+    createdAt: normalized.createdAt || Date.now(),
+    updatedAt: Date.now(),
+  };
+  const next = [...history];
+  next[index] = cleaned;
+  saveHistory(next);
+  void syncHistoryDayToLearningStats(cleaned);
+  return true;
 }
 
 export function judgeSessionPass(summary) {
