@@ -300,6 +300,23 @@ body {
   box-shadow: none;
 }
 
+.button.secondary {
+  background: #fff;
+  color: var(--cat-ink);
+  border: 2px solid var(--cat-border);
+  box-shadow: none;
+}
+
+.button.secondary::before,
+.button.secondary::after {
+  display: none;
+}
+
+.button.secondary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(75, 47, 31, 0.12);
+}
+
 .button.delete {
   background: linear-gradient(135deg, #f36a6a, #f59e9e);
   box-shadow: 0 6px 14px rgba(243, 106, 106, 0.35);

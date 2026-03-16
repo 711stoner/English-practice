@@ -1,16 +1,15 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSentences } from "../hooks/useSentences.js";
 import { useHistory } from "../hooks/useHistory.js";
 import {
   getCstDateString,
   getCstDayStartMs,
+  loadLearningStats,
 } from "../storage/historyStore.js";
-
-function formatDateTime(ts) {
-  if (!ts) return "-";
-  const d = new Date(ts);
-  return d.toLocaleString();
-}
+import {
+  ensureLearningStatsFile,
+  subscribeLearningStats,
+} from "../storage/learningStatsStore.js";
 
 function formatDuration(seconds) {
   const s = Math.max(0, seconds || 0);
@@ -42,24 +41,41 @@ function isDueByCstDay(srs, now = Date.now()) {
   return dueDate <= today;
 }
 
+function getReviewStatusLabel(srs, now = Date.now()) {
+  const dueAt = srs?.dueAt;
+  if (typeof dueAt !== "number" || !Number.isFinite(dueAt)) {
+    return "今日待复习";
+  }
+  const dueDate = getCstDateString(dueAt);
+  const today = getCstDateString(now);
+  return dueDate < today ? "已逾期" : "今日待复习";
+}
+
+function normalizeStatsDate(date) {
+  if (typeof date !== "string") return "";
+  if (/^\d{6}$/.test(date)) return date;
+  const m = date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return `${m[1].slice(2)}${m[2]}${m[3]}`;
+  return date;
+}
+
 const DAILY_REVIEW_LIMIT = 15;
 
 export default function Dashboard() {
   const { sentences } = useSentences();
   const { history } = useHistory();
-  const canvasRef = useRef(null);
+  const [showAllStats, setShowAllStats] = useState(false);
+  const [learningStats, setLearningStats] = useState(() => loadLearningStats());
+  const [statsLoading, setStatsLoading] = useState(true);
 
-  const now = Date.now();
   const todayStart = getCstDayStartMs();
   const dayMs = 24 * 60 * 60 * 1000;
 
   const stats = useMemo(() => {
     const total = sentences.length;
-    const dueTodayRaw = sentences.filter((s) =>
-      isDueByCstDay(s.srs, now)
-    ).length;
+    const dueTodayRaw = sentences.filter((s) => isDueByCstDay(s.srs)).length;
     const dueToday = Math.min(dueTodayRaw, DAILY_REVIEW_LIMIT);
-    const next7 = sentences.filter((s) => {
+    const next7Due = sentences.filter((s) => {
       if (!s.srs || s.srs.mastered) return false;
       if ((s.srs.reps ?? 0) <= 0) return false;
       const dueAt = s.srs?.dueAt;
@@ -70,35 +86,19 @@ export default function Dashboard() {
     const learned = sentences.filter((s) => (s.srs?.reps ?? 0) > 0).length;
     const mastered = sentences.filter((s) => s.srs?.mastered).length;
 
-    return { total, dueToday, next7, learned, mastered };
-  }, [sentences, now, todayStart, dayMs]);
-
-  const barData = useMemo(() => {
-    const reviewCounts = Array(7).fill(0);
-    const newCounts = Array(7).fill(0);
-    for (const s of sentences) {
-      if (!s.srs || s.srs.mastered) continue;
-      const dueAt = s.srs?.dueAt;
-      if (typeof dueAt !== "number" || !Number.isFinite(dueAt)) continue;
-      const dueDayStart = getCstDayStartMs(dueAt);
-      const diff = Math.floor((dueDayStart - todayStart) / dayMs);
-      if (diff >= 0 && diff < 7) {
-        if ((s.srs.reps ?? 0) > 0) {
-          reviewCounts[diff] += 1;
-        } else {
-          newCounts[diff] += 1;
-        }
-      }
-    }
-    return { reviewCounts, newCounts };
+    return { total, dueToday, next7Due, learned, mastered };
   }, [sentences, todayStart, dayMs]);
 
   const dueList = useMemo(() => {
     return sentences
-      .filter((s) => isDueByCstDay(s.srs, now))
+      .filter((s) => isDueByCstDay(s.srs))
       .sort((a, b) => (a.srs?.dueAt ?? 0) - (b.srs?.dueAt ?? 0))
       .slice(0, Math.min(10, DAILY_REVIEW_LIMIT));
-  }, [sentences, now]);
+  }, [sentences]);
+
+  const dueTotalCount = useMemo(() => {
+    return sentences.filter((s) => isDueByCstDay(s.srs)).length;
+  }, [sentences]);
 
   const todayHistory = useMemo(() => {
     const today = getCstDateString();
@@ -107,6 +107,7 @@ export default function Dashboard() {
         reviewedCount: 0,
         newCount: 0,
         durationSeconds: 0,
+        checkedIn: false,
       }
     );
   }, [history]);
@@ -114,17 +115,14 @@ export default function Dashboard() {
   const streakDays = useMemo(() => {
     const map = new Map(history.map((d) => [d.date, d]));
     const today = getCstDateString();
-    const isCheckin = (day) =>
-      (day.reviewedCount || 0) > 0 || (day.durationSeconds || 0) >= 60;
-
     const todayRecord = map.get(today);
-    if (!todayRecord || !isCheckin(todayRecord)) return 0;
+    if (!todayRecord?.checkedIn) return 0;
 
     let streak = 0;
     let cursor = today;
     while (true) {
       const record = map.get(cursor);
-      if (!record || !isCheckin(record)) break;
+      if (!record?.checkedIn) break;
       streak += 1;
       cursor = shiftDateStr(cursor, -1);
     }
@@ -132,64 +130,40 @@ export default function Dashboard() {
   }, [history]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    let cancelled = false;
 
-    const width = canvas.width;
-    const height = canvas.height;
-    ctx.clearRect(0, 0, width, height);
-
-    const padding = 24;
-    const chartWidth = width - padding * 2;
-    const chartHeight = height - padding * 2;
-
-    const maxValue = Math.max(
-      1,
-      ...barData.reviewCounts.map((v, i) => v + barData.newCounts[i])
-    );
-    const barWidth = chartWidth / barData.reviewCounts.length;
-
-    ctx.fillStyle = "#f2f2f2";
-    ctx.fillRect(0, 0, width, height);
-
-    ctx.strokeStyle = "#ddd";
-    ctx.beginPath();
-    ctx.moveTo(padding, padding);
-    ctx.lineTo(padding, height - padding);
-    ctx.lineTo(width - padding, height - padding);
-    ctx.stroke();
-
-    for (let i = 0; i < barData.reviewCounts.length; i += 1) {
-      const reviewValue = barData.reviewCounts[i];
-      const newValue = barData.newCounts[i];
-      const totalValue = reviewValue + newValue;
-      const totalHeight = Math.round((totalValue / maxValue) * (chartHeight - 8));
-      const reviewHeight = Math.round((reviewValue / maxValue) * (chartHeight - 8));
-      const newHeight = Math.round((newValue / maxValue) * (chartHeight - 8));
-      const x = padding + i * barWidth + 8;
-      const y = height - padding - totalHeight;
-      const w = barWidth - 16;
-
-      if (newHeight > 0) {
-        ctx.fillStyle = "#f2c94c";
-        ctx.fillRect(x, y, w, newHeight);
+    const refresh = () => {
+      const rows = loadLearningStats();
+      if (!cancelled) {
+        setLearningStats(rows);
       }
+    };
 
-      if (reviewHeight > 0) {
-        ctx.fillStyle = "#27ae60";
-        ctx.fillRect(x, y + newHeight, w, reviewHeight);
-      }
+    refresh();
+    ensureLearningStatsFile()
+      .then(() => {
+        refresh();
+      })
+      .finally(() => {
+        if (!cancelled) setStatsLoading(false);
+      });
 
-      ctx.fillStyle = "#333";
-      ctx.font = "12px Arial";
-      ctx.fillText(`D${i + 1}`, x + 2, height - padding + 14);
-      if (totalValue > 0) {
-        ctx.fillText(String(totalValue), x + 2, y - 4);
+    const unsubscribe = subscribeLearningStats((rows) => {
+      if (!cancelled) {
+        setLearningStats(rows);
       }
-    }
-  }, [barData]);
+    });
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, []);
+
+  const visibleStats = useMemo(() => {
+    if (showAllStats) return learningStats;
+    return learningStats.slice(0, 7);
+  }, [learningStats, showAllStats]);
 
   return (
     <div>
@@ -205,8 +179,8 @@ export default function Dashboard() {
             <strong style={{ fontSize: 24 }}>{stats.dueToday}</strong>
           </div>
           <div className="card" style={{ minWidth: 160 }}>
-            <div>未来7天计划复习（不含新学）</div>
-            <strong style={{ fontSize: 24 }}>{stats.next7}</strong>
+            <div>7天内到期复习</div>
+            <strong style={{ fontSize: 24 }}>{stats.next7Due}</strong>
           </div>
           <div className="card" style={{ minWidth: 160 }}>
             <div>已学（reps&gt;0）</div>
@@ -238,36 +212,69 @@ export default function Dashboard() {
             <div>连续打卡天数</div>
             <strong style={{ fontSize: 24 }}>{streakDays}</strong>
           </div>
+          <div className="card" style={{ minWidth: 160 }}>
+            <div>今日打卡状态</div>
+            <strong style={{ fontSize: 24 }}>
+              {todayHistory.checkedIn ? "已打卡" : "未打卡"}
+            </strong>
+          </div>
         </div>
       </div>
 
       <div className="card">
-        <h3>未来7天计划复习柱状图（新学 vs 复习）</h3>
-        <div style={{ marginBottom: 8, color: "#666" }}>
-          绿色：复习，黄色：新学
-        </div>
-        <canvas ref={canvasRef} width={700} height={260} />
+        <h3>学习情况数据</h3>
+        {statsLoading && <p>加载中...</p>}
+        {!statsLoading && learningStats.length === 0 && <p>暂无学习情况数据</p>}
+
+        {!statsLoading && learningStats.length > 0 && (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8 }}>
+              <strong>日期</strong>
+              <strong>打卡情况</strong>
+              <strong>新学句子数</strong>
+              <strong>复习句子数</strong>
+              {visibleStats.map((row) => (
+                <div key={row.date} style={{ display: "contents" }}>
+                  <div>{normalizeStatsDate(row.date)}</div>
+                  <div>{row.checkin_status || "未打卡"}</div>
+                  <div>{row.new_count || 0}</div>
+                  <div>{row.review_count || 0}</div>
+                </div>
+              ))}
+            </div>
+
+            {learningStats.length > 7 && (
+              <div style={{ marginTop: 12 }}>
+                <button
+                  className="button"
+                  type="button"
+                  onClick={() => setShowAllStats((v) => !v)}
+                >
+                  {showAllStats ? "收起" : "更多"}
+                  <span className="paw" />
+                </button>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       <div className="card">
-        <h3>今日到期列表（最多10条）</h3>
-        {dueList.length === 0 && <p>今天没有到期句子</p>}
+        <h3>今日待复习（最多10条）</h3>
+        {dueList.length === 0 && <p>今日暂无待复习内容</p>}
         {dueList.map((s) => (
           <div key={s.id} className="card">
-            <div>
-              <strong>中文：</strong>
-              {s.meaning}
-            </div>
-            <div>
-              <strong>标签：</strong>
-              {(s.tags || []).join(", ")}
-            </div>
-            <div>
-              <strong>到期时间：</strong>
-              {formatDateTime(s.srs?.dueAt)}
+            <div style={{ fontWeight: 600 }}>{s.meaning}</div>
+            <div style={{ marginTop: 6, color: "#666", fontSize: 13 }}>
+              状态：{getReviewStatusLabel(s.srs)}
             </div>
           </div>
         ))}
+        {dueTotalCount > dueList.length && (
+          <div style={{ marginTop: 8, color: "#666", fontSize: 13 }}>
+            还有 {dueTotalCount - dueList.length} 条待复习
+          </div>
+        )}
       </div>
     </div>
   );

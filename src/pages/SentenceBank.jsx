@@ -2,7 +2,6 @@ import { useState } from "react";
 import * as XLSX from "xlsx";
 import { useSentences } from "../hooks/useSentences.js";
 import { createSentence, makeId, ensureSrs } from "../storage/sentencesStore.js";
-import { upsertToday } from "../storage/historyStore.js";
 
 export default function SentenceBank() {
   const { sentences, setSentences } = useSentences();
@@ -32,11 +31,6 @@ export default function SentenceBank() {
 
     const next = [sentence, ...sentences];
     setSentences(next);
-
-    upsertToday((day) => ({
-      ...day,
-      newCount: (day.newCount || 0) + 1,
-    }));
 
     setText("");
     setMeaning("");
@@ -140,11 +134,6 @@ export default function SentenceBank() {
     if (toAdd.length > 0) {
       const next = [...toAdd, ...sentences];
       setSentences(next);
-
-      upsertToday((day) => ({
-        ...day,
-        newCount: (day.newCount || 0) + added,
-      }));
     }
 
     setBulkResult({
@@ -227,11 +216,6 @@ export default function SentenceBank() {
       if (toAdd && toAdd.length > 0) {
         const next = [...toAdd, ...sentences];
         setSentences(next);
-
-        upsertToday((day) => ({
-          ...day,
-          newCount: (day.newCount || 0) + added,
-        }));
       }
 
       setExcelResult({
