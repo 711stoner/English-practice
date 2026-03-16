@@ -27,75 +27,16 @@ import {
   injectSameSessionReinforcement,
   insertDeferredSentence,
 } from "../utils/studyPlan.js";
-
-function normalizeForCompare(text) {
-  return text
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s]/gu, "")
-    .replace(/\s+/g, "");
-}
-
-function normalizeForTokens(text) {
-  return text
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s]/gu, "")
-    .trim()
-    .replace(/\s+/g, " ");
-}
-
-function levenshtein(a, b) {
-  if (a === b) return 0;
-  const aLen = a.length;
-  const bLen = b.length;
-  if (aLen === 0) return bLen;
-  if (bLen === 0) return aLen;
-
-  const prev = Array.from({ length: bLen + 1 }, (_, i) => i);
-  const curr = new Array(bLen + 1).fill(0);
-
-  for (let i = 1; i <= aLen; i += 1) {
-    curr[0] = i;
-    const aChar = a[i - 1];
-    for (let j = 1; j <= bLen; j += 1) {
-      const cost = aChar === b[j - 1] ? 0 : 1;
-      curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
-    }
-    for (let j = 0; j <= bLen; j += 1) {
-      prev[j] = curr[j];
-    }
-  }
-
-  return prev[bLen];
-}
-
-function getFuzzyMatchInfo(userText, answerText) {
-  const userNorm = normalizeForCompare(userText);
-  const answerNorm = normalizeForCompare(answerText);
-  const distance = levenshtein(userNorm, answerNorm);
-  const threshold = 1;
-  if (distance > threshold) return { ok: false, message: "" };
-
-  const userTokens = normalizeForTokens(userText).split(" ").filter(Boolean);
-  const answerTokens = normalizeForTokens(answerText).split(" ").filter(Boolean);
-
-  if (userTokens.length !== answerTokens.length) return { ok: false, message: "" };
-
-  const mismatches = [];
-  for (let i = 0; i < userTokens.length; i += 1) {
-    if (userTokens[i] !== answerTokens[i]) {
-      mismatches.push(`${userTokens[i]} → ${answerTokens[i]}`);
-    }
-  }
-
-  return {
-    ok: mismatches.length <= 1,
-    message: mismatches.length > 0 ? `拼写问题：${mismatches.join("，")}` : "",
-  };
-}
+import {
+  getConfirmationPolicyByTier,
+  getPracticeFamiliarityTier,
+} from "../utils/familiarityTier.js";
+import { judgeSpellingAttempt } from "../utils/spellingJudge.js";
 
 const MASTERY_REPS = 8;
 const MASTERY_INTERVAL_DAYS = 730;
 const DAILY_MAX_LOAD = 15;
+const MAX_SESSION_REINFORCEMENTS = 3;
 
 function createEmptySessionSummary() {
   return {
@@ -103,6 +44,17 @@ function createEmptySessionSummary() {
     passed_count: 0,
     fuzzy_count: 0,
     failed_count: 0,
+  };
+}
+
+function createDefaultSentencePolicy() {
+  return {
+    usedHint: false,
+    usedTts: false,
+    usedSkip: false,
+    skipCount: 0,
+    sameSessionMiss: 0,
+    forceHardCap: false,
   };
 }
 
@@ -162,9 +114,12 @@ export default function Practice() {
   const [showHint, setShowHint] = useState(false);
   const [correctStreak, setCorrectStreak] = useState(0);
   const [fuzzyNotice, setFuzzyNotice] = useState("");
+  const [formattingHints, setFormattingHints] = useState([]);
+  const [confirmPrompt, setConfirmPrompt] = useState("");
 
   const [sessionSummary, setSessionSummary] = useState(createEmptySessionSummary);
   const [sessionSkipCounts, setSessionSkipCounts] = useState({});
+  const [sessionReinforcementCount, setSessionReinforcementCount] = useState(0);
   const [checkinFeedback, setCheckinFeedback] = useState("");
   const [checkedInToday, setCheckedInToday] = useState(() => hasCheckedInToday());
 
@@ -175,6 +130,8 @@ export default function Practice() {
   const fuzzyFirstPassIdsRef = useRef(new Set());
   const reinforcementInsertedRef = useRef(new Set());
   const startedNewInSessionRef = useRef(new Set());
+  const sentencePolicyRef = useRef(new Map());
+  const reinforcementBudgetRef = useRef(0);
   const isWindowActiveRef = useRef(
     typeof document !== "undefined" ? document.visibilityState === "visible" : true
   );
@@ -191,6 +148,29 @@ export default function Practice() {
     }, duration);
   }
 
+  function getSentencePolicy(sentenceId) {
+    if (!sentenceId) return createDefaultSentencePolicy();
+    const existing = sentencePolicyRef.current.get(sentenceId);
+    if (existing) return existing;
+    const next = createDefaultSentencePolicy();
+    sentencePolicyRef.current.set(sentenceId, next);
+    return next;
+  }
+
+  function patchSentencePolicy(sentenceId, patch = {}) {
+    if (!sentenceId) return createDefaultSentencePolicy();
+    const base = getSentencePolicy(sentenceId);
+    const next = { ...base, ...patch };
+    sentencePolicyRef.current.set(sentenceId, next);
+    return next;
+  }
+
+  function getCurrentTier() {
+    if (!current) return "weak";
+    const policy = getSentencePolicy(current.id);
+    return getPracticeFamiliarityTier(current, idMeta[current.id], policy);
+  }
+
   function resetPracticeState() {
     setInput("");
     setInputError("");
@@ -200,6 +180,8 @@ export default function Practice() {
     setShowHint(false);
     setCorrectStreak(0);
     setFuzzyNotice("");
+    setFormattingHints([]);
+    setConfirmPrompt("");
   }
 
   function setDailyQueue(sourceSentences, options = {}) {
@@ -213,11 +195,14 @@ export default function Practice() {
     setCompletedCount(0);
     setSessionSummary(createEmptySessionSummary());
     setSessionSkipCounts({});
+    setSessionReinforcementCount(0);
     setCheckinFeedback("");
 
     fuzzyFirstPassIdsRef.current.clear();
     reinforcementInsertedRef.current.clear();
     startedNewInSessionRef.current.clear();
+    sentencePolicyRef.current.clear();
+    reinforcementBudgetRef.current = 0;
     resetStudyActivityMarker();
 
     if (options.showMessage) {
@@ -235,6 +220,9 @@ export default function Practice() {
     return () => {
       if (actionTimeoutRef.current) {
         clearTimeout(actionTimeoutRef.current);
+      }
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
       }
       resetStudyActivityMarker();
     };
@@ -271,6 +259,17 @@ export default function Practice() {
     const currentId = queueIds[0];
     return sentences.find((s) => s.id === currentId) || null;
   }, [sentences, queueIds, isRandomMode, randomId]);
+
+  const currentTier = useMemo(() => {
+    if (!current || isRandomMode) return "weak";
+    return getCurrentTier();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current?.id, idMeta, isRandomMode, sessionSkipCounts]);
+
+  const currentConfirmPolicy = useMemo(
+    () => getConfirmationPolicyByTier(currentTier),
+    [currentTier]
+  );
 
   useEffect(() => {
     const currentId = current?.id || null;
@@ -352,10 +351,40 @@ export default function Practice() {
     setDailyQueue(reload(), { showMessage: "已返回今日练习" });
   }
 
+  function handleShowHint() {
+    markActiveStudy({ trackNewStart: true });
+    if (current?.id) {
+      patchSentencePolicy(current.id, { usedHint: true });
+    }
+    setShowHint(true);
+    showActionMessage("已查看提示，本句本轮最高按“模糊”记录", 1800);
+  }
+
+  function handleSpeak() {
+    markActiveStudy({ trackNewStart: true });
+    if (!current?.id) return;
+
+    patchSentencePolicy(current.id, { usedTts: true });
+
+    if (typeof window === "undefined" || !window.speechSynthesis) {
+      showActionMessage("当前浏览器不支持朗读，本句本轮最高按“模糊”记录", 1800);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(current.text || "");
+    utter.lang = "en-US";
+    window.speechSynthesis.speak(utter);
+    showActionMessage("已朗读本句，本句本轮最高按“模糊”记录", 1800);
+  }
+
   const judgedSession = useMemo(
     () => judgeSessionPass(sessionSummary),
     [sessionSummary]
   );
+  const currentSentencePolicy = current?.id
+    ? getSentencePolicy(current.id)
+    : createDefaultSentencePolicy();
 
   const remainingCount = isRandomMode ? 0 : queueIds.length;
   const progressHint =
@@ -475,41 +504,90 @@ export default function Practice() {
 
     setInputError("");
 
-    const user = normalizeForCompare(input);
-    const answer = normalizeForCompare(current.text || "");
-    const exactOk = user === answer;
+    const judge = judgeSpellingAttempt(input, current.text || "");
+    const exactOk = judge.exact;
+    const fuzzyOk = !judge.exact && judge.fuzzyOk;
+    const fuzzyMessage = fuzzyOk ? judge.message : "";
+    const nextFormattingHints = judge.formattingHints || [];
 
-    let fuzzyMessage = "";
-    if (!exactOk) {
-      const fuzzy = getFuzzyMatchInfo(input, current.text || "");
-      if (fuzzy.ok) {
-        fuzzyMessage = fuzzy.message;
-      }
-    }
+    const confirmationPolicy = currentConfirmPolicy;
 
-    if (correctStreak === 0 && (exactOk || Boolean(fuzzyMessage))) {
-      if (fuzzyMessage) {
-        fuzzyFirstPassIdsRef.current.add(current.id);
+    if (confirmationPolicy.requireSecondConfirm) {
+      if (correctStreak === 0 && (exactOk || fuzzyOk)) {
+        if (fuzzyOk) fuzzyFirstPassIdsRef.current.add(current.id);
+        setCorrectStreak(1);
+        setInput("");
+        setResult(null);
+        setSubmitted(false);
+        setShowHint(false);
+        setFuzzyNotice(fuzzyMessage);
+        setFormattingHints(nextFormattingHints);
+        setConfirmPrompt("请再默写一次确认（第二次需精确拼写）");
+        const notice = fuzzyOk ? `✅ 内容正确：${fuzzyMessage}` : "✅ 内容正确";
+        setAnswerMessage(notice);
+        return;
       }
-      setCorrectStreak(1);
-      setInput("");
-      setResult(null);
-      setSubmitted(false);
-      const notice = fuzzyMessage ? `✅ 基本正确（有拼写问题）：${fuzzyMessage}` : "✅ 正确";
-      setAnswerMessage(`${notice}\n请再默写一次确认`);
+
+      const ok = correctStreak > 0 ? exactOk : false;
+      setCorrectStreak(0);
+      setResult(ok);
+      setSubmitted(true);
+      setAnswerMessage("");
       setShowHint(false);
       setFuzzyNotice(fuzzyMessage);
+      setFormattingHints(ok ? nextFormattingHints : []);
+      setConfirmPrompt("");
       return;
     }
 
-    const ok = correctStreak > 0 ? exactOk : exactOk || Boolean(fuzzyMessage);
+    if (confirmationPolicy.fuzzyNeedsConfirm) {
+      if (exactOk) {
+        setCorrectStreak(0);
+        setResult(true);
+        setSubmitted(true);
+        setAnswerMessage("");
+        setShowHint(false);
+        setFuzzyNotice("");
+        setFormattingHints(nextFormattingHints);
+        setConfirmPrompt("");
+        return;
+      }
 
+      if (fuzzyOk && correctStreak === 0) {
+        fuzzyFirstPassIdsRef.current.add(current.id);
+        setCorrectStreak(1);
+        setInput("");
+        setResult(null);
+        setSubmitted(false);
+        setShowHint(false);
+        setFuzzyNotice(fuzzyMessage);
+        setFormattingHints(nextFormattingHints);
+        setConfirmPrompt("这句接近正确，请再默写一次（需精确拼写）");
+        setAnswerMessage(`✅ 内容正确：${fuzzyMessage}`);
+        return;
+      }
+
+      setCorrectStreak(0);
+      setResult(false);
+      setSubmitted(true);
+      setAnswerMessage("");
+      setShowHint(false);
+      setFuzzyNotice(fuzzyMessage);
+      setFormattingHints([]);
+      setConfirmPrompt("");
+      return;
+    }
+
+    const ok = exactOk || fuzzyOk;
+    if (fuzzyOk) fuzzyFirstPassIdsRef.current.add(current.id);
     setCorrectStreak(0);
     setResult(ok);
     setSubmitted(true);
     setAnswerMessage("");
     setShowHint(false);
     setFuzzyNotice(fuzzyMessage);
+    setFormattingHints(ok ? nextFormattingHints : []);
+    setConfirmPrompt("");
   }
 
   function handleSubmit(e) {
@@ -539,7 +617,17 @@ export default function Practice() {
     }
 
     const id = current.id;
-    const nextSkip = (sessionSkipCounts[id] || 0) + 1;
+    const policy = getSentencePolicy(id);
+    const nextSkip = (policy.skipCount || 0) + 1;
+    const nextMiss = (policy.sameSessionMiss || 0) + 1;
+    const forceHardCap = nextSkip >= 3 || nextMiss >= 2;
+    patchSentencePolicy(id, {
+      usedSkip: true,
+      skipCount: nextSkip,
+      sameSessionMiss: nextMiss,
+      forceHardCap,
+    });
+
     const nextSkipCounts = { ...sessionSkipCounts, [id]: nextSkip };
     const nextSkipUniqueCount = Object.keys(nextSkipCounts).filter(
       (key) => (nextSkipCounts[key] || 0) > 0
@@ -552,14 +640,14 @@ export default function Practice() {
       const [head, ...tail] = prev;
       if (!head) return prev;
 
-      let minGap = 3;
-      let maxGap = 5;
-      if (nextSkip >= 2) {
-        minGap = 2;
-        maxGap = 4;
+      let minGap = 2;
+      let maxGap = 4;
+      if (nextSkip === 2) {
+        minGap = 1;
+        maxGap = 3;
       }
       if (nextSkip >= 3) {
-        minGap = 1;
+        minGap = 2;
         maxGap = 2;
       }
 
@@ -574,8 +662,8 @@ export default function Practice() {
 
     resetPracticeState();
 
-    if (nextSkip >= 3) {
-      showActionMessage("这句已多次不会，系统会更快再次安排，建议先看提示再答");
+    if (nextSkip >= 2) {
+      showActionMessage("这句今天会继续强化，本轮最高按“模糊”记录，建议先看提示再答", 2200);
     } else {
       showActionMessage("已标记为不会，这句会在稍后再次出现");
     }
@@ -585,18 +673,40 @@ export default function Practice() {
     markActiveStudy({ trackNewStart: true });
     const now = Date.now();
     const currentId = current.id;
+    const sentencePolicy = getSentencePolicy(currentId);
+
+    let effectiveQ = q;
+    let capReason = "";
+    const shouldCapToHard =
+      sentencePolicy.forceHardCap ||
+      sentencePolicy.usedHint ||
+      sentencePolicy.usedSkip ||
+      sentencePolicy.usedTts;
+
+    if (shouldCapToHard && effectiveQ > 3) {
+      effectiveQ = 3;
+      if (sentencePolicy.forceHardCap) {
+        capReason = "同轮多次不会，这句本次最高按“模糊”记录";
+      } else if (sentencePolicy.usedSkip) {
+        capReason = "本轮点过“不会这句”，这句本次最高按“模糊”记录";
+      } else if (sentencePolicy.usedHint) {
+        capReason = "本轮看过提示，这句本次最高按“模糊”记录";
+      } else {
+        capReason = "本轮使用过朗读辅助，这句本次最高按“模糊”记录";
+      }
+    }
 
     const next = sentences.map((s) => {
       if (s.id !== currentId) return s;
       const base = ensureSrs(s).srs;
-      const rating = ratingFromQuality(q);
+      const rating = ratingFromQuality(effectiveQ);
       const updatedCard = rateFsrsCard(base.fsrs, rating, now);
       const intervalDays = getFsrsIntervalDays(updatedCard);
       const reps = getFsrsReps(updatedCard);
       const lapses = getFsrsLapses(updatedCard);
       const lastReviewAt = getFsrsLastReviewAt(updatedCard);
       const mastered =
-        q >= 3 &&
+        effectiveQ >= 3 &&
         reps >= MASTERY_REPS &&
         intervalDays >= MASTERY_INTERVAL_DAYS;
 
@@ -620,7 +730,7 @@ export default function Practice() {
 
     setSentences(next);
 
-    const resultType = q >= 4 ? "pass" : q >= 3 ? "fuzzy" : "fail";
+    const resultType = effectiveQ >= 4 ? "pass" : effectiveQ >= 3 ? "fuzzy" : "fail";
     recordDailyReviewCount(1, resultType);
 
     if (!isRandomMode) {
@@ -634,23 +744,30 @@ export default function Practice() {
 
       const shouldReinforce =
         !reinforcementInsertedRef.current.has(currentId) &&
-        (q <= 3 || fuzzyFirstPassIdsRef.current.has(currentId) || idMeta[currentId]?.type === "new");
+        reinforcementBudgetRef.current < MAX_SESSION_REINFORCEMENTS &&
+        (effectiveQ <= 3 ||
+          fuzzyFirstPassIdsRef.current.has(currentId) ||
+          idMeta[currentId]?.type === "new" ||
+          sentencePolicy.sameSessionMiss >= 2);
 
       setQueueIds((prev) => {
         const [, ...tail] = prev;
         if (!shouldReinforce) return tail;
 
         reinforcementInsertedRef.current.add(currentId);
+        reinforcementBudgetRef.current += 1;
+        setSessionReinforcementCount(reinforcementBudgetRef.current);
         return injectSameSessionReinforcement(tail, currentId, { minGap: 3, maxGap: 5 });
       });
     } else {
       setRandomId(pickRandomId(next));
     }
 
+    sentencePolicyRef.current.delete(currentId);
     fuzzyFirstPassIdsRef.current.delete(currentId);
 
     resetPracticeState();
-    showActionMessage("已记录本次练习");
+    showActionMessage(capReason || "已记录本次练习", capReason ? 2200 : 1600);
   }
 
   return (
@@ -671,6 +788,9 @@ export default function Practice() {
               自动控量：{planInfo.protectionReasons.join("、")}
             </div>
           )}
+          <div style={{ marginTop: 4, color: "#666", fontSize: 12 }}>
+            同日强化回看：{sessionReinforcementCount}/{MAX_SESSION_REINFORCEMENTS}
+          </div>
         </div>
       )}
 
@@ -694,6 +814,11 @@ export default function Practice() {
       <div style={{ marginBottom: 12 }}>
         <strong>中文提示：</strong>
         {current.meaning}
+        {!isRandomMode && (
+          <div style={{ marginTop: 6, color: "#666", fontSize: 12 }}>
+            当前确认强度：{currentConfirmPolicy.label}
+          </div>
+        )}
       </div>
 
       <details style={{ marginBottom: 10, color: "#666", fontSize: 12 }}>
@@ -738,12 +863,12 @@ export default function Practice() {
               <button
                 className="button secondary"
                 type="button"
-                onClick={() => {
-                  markActiveStudy({ trackNewStart: true });
-                  setShowHint(true);
-                }}
+                onClick={handleShowHint}
               >
                 查看提示
+              </button>
+              <button className="button secondary" type="button" onClick={handleSpeak}>
+                朗读
               </button>
               <button className="button secondary" type="button" onClick={handleNext}>
                 不会这句
@@ -763,12 +888,30 @@ export default function Practice() {
           {answerMessage}
         </div>
       )}
+      {formattingHints.length > 0 && (
+        <div style={{ marginTop: 6, color: "#666", fontSize: 13 }}>
+          小提醒：这句内容已经对了，格式可再规范一些（{formattingHints.join("；")}）
+        </div>
+      )}
+      {confirmPrompt && (
+        <div style={{ marginTop: 6, color: "#666", fontSize: 13 }}>{confirmPrompt}</div>
+      )}
 
       {showHint && !submitted && <div style={{ marginTop: 8, color: "#333" }}>提示：{current.text}</div>}
 
+      {!submitted &&
+        (currentSentencePolicy.usedHint ||
+          currentSentencePolicy.usedSkip ||
+          currentSentencePolicy.usedTts ||
+          currentSentencePolicy.forceHardCap) && (
+          <div style={{ marginTop: 8, color: "#666", fontSize: 12 }}>
+            本轮已使用辅助（提示/朗读/跳过），本句最高按“模糊”记录
+          </div>
+        )}
+
       {submitted && (
         <div style={{ marginTop: 12 }}>
-          <div>{result ? "✅ 提交成功" : "❌ 还有错误"}</div>
+          <div>{result ? "✅ 内容正确" : "还差一点，建议再试一次"}</div>
           <div>正确答案：{current.text}</div>
           {result && fuzzyNotice && <div style={{ marginTop: 6, color: "#c66" }}>{fuzzyNotice}</div>}
 

@@ -10,6 +10,10 @@ import {
   ensureLearningStatsFile,
   subscribeLearningStats,
 } from "../storage/learningStatsStore.js";
+import {
+  MEMORY_RULES_FOOTNOTE,
+  MEMORY_RULES_SECTIONS,
+} from "../constants/memoryRules.js";
 
 function formatDuration(seconds) {
   const s = Math.max(0, seconds || 0);
@@ -65,6 +69,7 @@ export default function Dashboard() {
   const { sentences } = useSentences();
   const { history } = useHistory();
   const [showAllStats, setShowAllStats] = useState(false);
+  const [showRules, setShowRules] = useState(false);
   const [learningStats, setLearningStats] = useState(() => loadLearningStats());
   const [statsLoading, setStatsLoading] = useState(true);
 
@@ -170,7 +175,16 @@ export default function Dashboard() {
   return (
     <div>
       <div className="card">
-        <h2>仪表盘</h2>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <h2 style={{ margin: 0 }}>仪表盘</h2>
+          <button
+            className="button secondary"
+            type="button"
+            onClick={() => setShowRules((v) => !v)}
+          >
+            {showRules ? "收起学习规则" : "学习规则说明"}
+          </button>
+        </div>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           <div className="card" style={{ minWidth: 160 }}>
             <div>总句子数</div>
@@ -194,6 +208,31 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {showRules && (
+        <div className="card">
+          <h3>学习规则说明</h3>
+          <p style={{ color: "#666", marginTop: 4 }}>
+            这套规则用于帮助你更稳定地记住英文整句，下面是当前应用正在执行的核心学习逻辑。
+          </p>
+          {MEMORY_RULES_SECTIONS.map((section) => (
+            <details key={section.title} style={{ marginTop: 10 }}>
+              <summary style={{ cursor: "pointer", fontWeight: 700 }}>{section.title}</summary>
+              <div style={{ marginTop: 6, color: "#666" }}>{section.summary}</div>
+              <ul style={{ marginTop: 6, marginBottom: 0, paddingLeft: 20 }}>
+                {section.points.map((point) => (
+                  <li key={point} style={{ marginTop: 4 }}>
+                    {point}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ))}
+          <div style={{ marginTop: 12, color: "#666", fontSize: 12 }}>
+            {MEMORY_RULES_FOOTNOTE}
+          </div>
+        </div>
+      )}
 
       <div className="card">
         <h3>今日学习数据</h3>
