@@ -7,9 +7,9 @@ import {
   judgeSessionPass,
   loadHistory,
   markDailyCheckin,
-  recordDailyNewPractice,
   recordDailyReviewCount,
-  upsertToday,
+  resetStudyActivityMarker,
+  markStudyActivity,
 } from "../storage/historyStore.js";
 import {
   getFsrsDueAt,
@@ -169,13 +169,13 @@ export default function Practice() {
 
   const inputRef = useRef(null);
   const actionTimeoutRef = useRef(null);
-  const lastTickRef = useRef(0);
-  const intervalRef = useRef(null);
   const lastQuestionIdRef = useRef(null);
 
   const fuzzyFirstPassIdsRef = useRef(new Set());
   const reinforcementInsertedRef = useRef(new Set());
-  const newCountRecordedIdsRef = useRef(new Set());
+  const isWindowActiveRef = useRef(
+    typeof document !== "undefined" ? document.visibilityState === "visible" : true
+  );
 
   function showActionMessage(msg, duration = 1600) {
     if (actionTimeoutRef.current) {
@@ -215,7 +215,7 @@ export default function Practice() {
 
     fuzzyFirstPassIdsRef.current.clear();
     reinforcementInsertedRef.current.clear();
-    newCountRecordedIdsRef.current.clear();
+    resetStudyActivityMarker();
 
     if (options.showMessage) {
       showActionMessage(options.showMessage);
@@ -229,44 +229,11 @@ export default function Practice() {
   }, []);
 
   useEffect(() => {
-    const start = Date.now();
-    lastTickRef.current = start;
-
-    intervalRef.current = setInterval(() => {
-      const now = Date.now();
-      const deltaSec = Math.floor((now - lastTickRef.current) / 1000);
-      if (deltaSec > 0) {
-        upsertToday(
-          (day) => ({
-            ...day,
-            durationSeconds: (day.durationSeconds || 0) + deltaSec,
-          }),
-          { syncLearningStats: false }
-        );
-        lastTickRef.current = now;
-      }
-    }, 10000);
-
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      const end = Date.now();
-      const deltaSec = Math.floor((end - lastTickRef.current) / 1000);
-      if (deltaSec > 0) {
-        upsertToday(
-          (day) => ({
-            ...day,
-            durationSeconds: (day.durationSeconds || 0) + deltaSec,
-          }),
-          { syncLearningStats: false }
-        );
-      }
-
       if (actionTimeoutRef.current) {
         clearTimeout(actionTimeoutRef.current);
       }
+      resetStudyActivityMarker();
     };
   }, []);
 
@@ -308,17 +275,37 @@ export default function Practice() {
       resetPracticeState();
     }
 
-    if (!isRandomMode && currentId) {
-      const meta = idMeta[currentId];
-      if (meta?.type === "new" && !newCountRecordedIdsRef.current.has(currentId)) {
-        newCountRecordedIdsRef.current.add(currentId);
-        void recordDailyNewPractice(currentId);
-      }
-    }
-
     lastQuestionIdRef.current = currentId;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current?.id, idMeta, isRandomMode]);
+  }, [current?.id]);
+
+  useEffect(() => {
+    const updateActiveState = () => {
+      isWindowActiveRef.current = document.visibilityState === "visible" && document.hasFocus();
+      if (!isWindowActiveRef.current) {
+        resetStudyActivityMarker();
+      }
+    };
+
+    const onFocus = () => {
+      isWindowActiveRef.current = document.visibilityState === "visible";
+    };
+
+    const onBlur = () => {
+      isWindowActiveRef.current = false;
+      resetStudyActivityMarker();
+    };
+
+    document.addEventListener("visibilitychange", updateActiveState);
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("blur", onBlur);
+
+    return () => {
+      document.removeEventListener("visibilitychange", updateActiveState);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("blur", onBlur);
+    };
+  }, []);
 
   useEffect(() => {
     if (!submitted && inputRef.current) {
@@ -326,22 +313,13 @@ export default function Practice() {
     }
   }, [current?.id, submitted]);
 
-  function flushDuration() {
-    const now = Date.now();
-    const deltaSec = Math.floor((now - lastTickRef.current) / 1000);
-    if (deltaSec > 0) {
-      upsertToday(
-        (day) => ({
-          ...day,
-          durationSeconds: (day.durationSeconds || 0) + deltaSec,
-        }),
-        { syncLearningStats: false }
-      );
-      lastTickRef.current = now;
-    }
+  function markActiveStudy() {
+    if (!isWindowActiveRef.current) return;
+    markStudyActivity({ maxGapSeconds: 30 });
   }
 
   function rebuildQueueFromStorage() {
+    markActiveStudy();
     const latest = reload();
     setIsRandomMode(false);
     setRandomId(null);
@@ -350,6 +328,7 @@ export default function Practice() {
   }
 
   function enterRandomMode() {
+    markActiveStudy();
     setIsRandomMode(true);
     setRandomId(pickRandomId(sentences));
     resetPracticeState();
@@ -357,7 +336,7 @@ export default function Practice() {
   }
 
   function exitRandomMode() {
-    flushDuration();
+    markActiveStudy();
     setIsRandomMode(false);
     setRandomId(null);
     resetPracticeState();
@@ -477,6 +456,7 @@ export default function Practice() {
   }
 
   function submitAnswer() {
+    markActiveStudy();
     if (submitted) return;
 
     if (!input.trim()) {
@@ -541,6 +521,7 @@ export default function Practice() {
   }
 
   function handleNext() {
+    markActiveStudy();
     if (isRandomMode) {
       setRandomId(pickRandomId(sentences));
       resetPracticeState();
@@ -592,6 +573,7 @@ export default function Practice() {
   }
 
   function handleRate(q) {
+    markActiveStudy();
     const now = Date.now();
     const currentId = current.id;
 

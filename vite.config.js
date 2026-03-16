@@ -49,6 +49,7 @@ function normalizeRecord(input) {
     checkin_status: checkedIn ? "已打卡" : "未打卡",
     new_count: normalizeCount(input.new_count),
     review_count: reviewCount,
+    study_seconds: normalizeCount(input.study_seconds),
     pass_count: passCount,
     fuzzy_count: normalizeCount(input.fuzzy_count),
     fail_count: normalizeCount(input.fail_count),
