@@ -17,6 +17,7 @@ import {
 export default function App() {
   const [user, setUser] = useState(() => loadAuthUser());
   const [syncState, setSyncState] = useState("");
+  const [isSyncing, setIsSyncing] = useState(false);
   const syncingFromCloudRef = useRef(false);
   const syncTimerRef = useRef(null);
 
@@ -37,6 +38,7 @@ export default function App() {
 
     const run = async () => {
       syncingFromCloudRef.current = true;
+      setIsSyncing(true);
       setSyncState("同步中");
       try {
         await syncUserDataFromCloud(currentUser);
@@ -45,6 +47,7 @@ export default function App() {
         if (!cancelled) setSyncState("同步失败");
       } finally {
         syncingFromCloudRef.current = false;
+        if (!cancelled) setIsSyncing(false);
       }
     };
 
@@ -63,11 +66,14 @@ export default function App() {
       }
       syncTimerRef.current = setTimeout(async () => {
         try {
+          setIsSyncing(true);
           setSyncState("同步中");
           await pushUserDataToCloud(user);
           setSyncState("已同步");
         } catch {
           setSyncState("同步失败");
+        } finally {
+          setIsSyncing(false);
         }
       }, 900);
     };
@@ -97,6 +103,27 @@ export default function App() {
     const inputName = window.prompt("请输入登录名（任意昵称即可）");
     if (!inputName) return;
     loginWithName(inputName);
+  }
+
+  async function handleManualSync() {
+    if (!user || isSyncing) return;
+    if (syncTimerRef.current) {
+      clearTimeout(syncTimerRef.current);
+      syncTimerRef.current = null;
+    }
+
+    syncingFromCloudRef.current = true;
+    setIsSyncing(true);
+    setSyncState("同步中");
+    try {
+      await syncUserDataFromCloud(user);
+      setSyncState("已同步");
+    } catch {
+      setSyncState("同步失败");
+    } finally {
+      syncingFromCloudRef.current = false;
+      setIsSyncing(false);
+    }
   }
 
   return (
@@ -129,6 +156,16 @@ export default function App() {
           <button className="button secondary auth-button" type="button" onClick={handleAuthClick}>
             {user ? "退出" : "登录"}
           </button>
+          {user && (
+            <button
+              className="button secondary auth-button"
+              type="button"
+              onClick={handleManualSync}
+              disabled={isSyncing}
+            >
+              {isSyncing ? "同步中" : "手动同步"}
+            </button>
+          )}
         </div>
       </header>
 
