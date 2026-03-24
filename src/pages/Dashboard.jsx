@@ -80,11 +80,12 @@ function historyDayToStatsRow(day) {
 }
 
 const REVIEW_LIST_LIMIT = 10;
+const HISTORY_VIEW_DAYS = 365;
 
 export default function Dashboard() {
   const { sentences } = useSentences();
   const { history } = useHistory();
-  const [showAllStats, setShowAllStats] = useState(false);
+  const [showYearStats, setShowYearStats] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [learningStats, setLearningStats] = useState(() => loadLearningStats());
   const [statsLoading, setStatsLoading] = useState(true);
@@ -201,12 +202,21 @@ export default function Dashboard() {
     [statsRowsSource, recentDateSet]
   );
 
+  const recentYearStatsRows = useMemo(
+    () =>
+      selectRecentLearningStatsRows(statsRowsSource, {
+        days: HISTORY_VIEW_DAYS,
+        fillMissingDays: false,
+      }),
+    [statsRowsSource]
+  );
+
   const visibleStats = useMemo(() => {
-    if (showAllStats) {
-      return statsRowsSource.map((row) => ({ ...row, has_record: true }));
+    if (showYearStats) {
+      return recentYearStatsRows;
     }
     return recentStatsRows;
-  }, [statsRowsSource, recentStatsRows, showAllStats]);
+  }, [recentStatsRows, recentYearStatsRows, showYearStats]);
 
   const todayStatsDate = useMemo(
     () => normalizeStatsDate(todayHistory.date),
@@ -310,7 +320,7 @@ export default function Dashboard() {
 
         {!statsLoading && hasAnyStatsOrFallback && (
           <>
-            {!showAllStats && !recentHasAnyRecord && (
+            {!showYearStats && !recentHasAnyRecord && (
               <p style={{ color: "#666" }}>最近7天暂无学习记录，可查看更早历史数据</p>
             )}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8 }}>
@@ -347,9 +357,9 @@ export default function Dashboard() {
                 <button
                   className="button"
                   type="button"
-                  onClick={() => setShowAllStats((v) => !v)}
+                  onClick={() => setShowYearStats((v) => !v)}
                 >
-                  {showAllStats ? "收起" : "查看更多历史记录"}
+                  {showYearStats ? "收起" : "查看最近一年记录"}
                   <span className="paw" />
                 </button>
               </div>
