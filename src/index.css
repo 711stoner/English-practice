@@ -159,6 +159,37 @@ body {
   box-shadow: 0 6px 14px rgba(245, 158, 66, 0.35);
 }
 
+.nav-spacer {
+  flex: 1;
+}
+
+.auth-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-user {
+  font-size: 14px;
+  color: var(--cat-ink);
+  white-space: nowrap;
+}
+
+.auth-user.muted {
+  color: var(--cat-muted);
+}
+
+.auth-button {
+  padding: 6px 12px;
+}
+
+@media (max-width: 800px) {
+  .auth-area {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
 .container {
   max-width: 980px;
   margin: 0 auto;

@@ -7,6 +7,7 @@ import react from "@vitejs/plugin-react";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, "data");
 const LEARNING_STATS_FILE = path.join(DATA_DIR, "learning_stats.json");
+const USER_DATA_FILE = path.join(DATA_DIR, "user_data.json");
 
 function normalizeCount(value) {
   const n = Number(value);
@@ -192,6 +193,17 @@ function parseJsonBody(req) {
   });
 }
 
+function normalizeUserId(raw) {
+  if (typeof raw !== "string") return "";
+  const cleaned = raw.trim().replace(/[^a-zA-Z0-9_-]/g, "");
+  return cleaned.slice(0, 64);
+}
+
+function toObjectArray(value) {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item) => item && typeof item === "object");
+}
+
 async function upsertRecord(record) {
   const normalized = normalizeRecord(record);
   if (!normalized) return null;
@@ -270,7 +282,143 @@ function createLearningStatsApiPlugin() {
   };
 }
 
+async function ensureUserDataFile() {
+  await fs.mkdir(DATA_DIR, { recursive: true });
+
+  try {
+    await fs.access(USER_DATA_FILE);
+  } catch {
+    const initial = {
+      version: 1,
+      users: {},
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    await fs.writeFile(USER_DATA_FILE, `${JSON.stringify(initial, null, 2)}\n`, "utf8");
+  }
+}
+
+async function readUserDataFile() {
+  await ensureUserDataFile();
+  const raw = await fs.readFile(USER_DATA_FILE, "utf8");
+
+  try {
+    const parsed = JSON.parse(raw);
+    const users = parsed?.users && typeof parsed.users === "object" ? parsed.users : {};
+    return {
+      version: 1,
+      users,
+      created_at:
+        typeof parsed?.created_at === "string" && parsed.created_at
+          ? parsed.created_at
+          : new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+  } catch {
+    return {
+      version: 1,
+      users: {},
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+  }
+}
+
+async function writeUserDataFile(payload) {
+  const data = {
+    version: 1,
+    users: payload?.users && typeof payload.users === "object" ? payload.users : {},
+    created_at:
+      typeof payload?.created_at === "string" && payload.created_at
+        ? payload.created_at
+        : new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  await fs.writeFile(USER_DATA_FILE, `${JSON.stringify(data, null, 2)}\n`, "utf8");
+  return data;
+}
+
+function createUserDataApiPlugin() {
+  const applyMiddleware = (server) => {
+    server.middlewares.use(async (req, res, next) => {
+      const rawUrl = req.url || "";
+      if (!rawUrl.startsWith("/api/user-data")) {
+        next();
+        return;
+      }
+
+      const url = new URL(rawUrl, "http://localhost");
+      const pathname = url.pathname;
+
+      try {
+        if (req.method === "GET" && pathname === "/api/user-data") {
+          const userId = normalizeUserId(url.searchParams.get("userId") || "");
+          if (!userId) {
+            sendJson(res, 400, { error: "Missing userId" });
+            return;
+          }
+          const payload = await readUserDataFile();
+          const user = payload.users[userId] || {};
+          sendJson(res, 200, {
+            userId,
+            sentences: toObjectArray(user.sentences),
+            history: toObjectArray(user.history),
+            updated_at:
+              typeof user.updated_at === "string" ? user.updated_at : null,
+          });
+          return;
+        }
+
+        if (req.method === "POST" && pathname === "/api/user-data/upsert") {
+          const body = await parseJsonBody(req);
+          const userId = normalizeUserId(body?.userId || "");
+          if (!userId) {
+            sendJson(res, 400, { error: "Missing userId" });
+            return;
+          }
+
+          const payload = await readUserDataFile();
+          const nextUsers = {
+            ...payload.users,
+            [userId]: {
+              userId,
+              sentences: toObjectArray(body?.sentences),
+              history: toObjectArray(body?.history),
+              updated_at: new Date().toISOString(),
+            },
+          };
+
+          await writeUserDataFile({
+            ...payload,
+            users: nextUsers,
+          });
+
+          sendJson(res, 200, {
+            ok: true,
+            userId,
+            updated_at: nextUsers[userId].updated_at,
+          });
+          return;
+        }
+
+        sendJson(res, 404, { error: "Not found" });
+      } catch (err) {
+        sendJson(res, 500, {
+          error: err instanceof Error ? err.message : "Internal server error",
+        });
+      }
+    });
+  };
+
+  return {
+    name: "user-data-api",
+    configureServer: applyMiddleware,
+    configurePreviewServer: applyMiddleware,
+  };
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), createLearningStatsApiPlugin()],
+  plugins: [react(), createLearningStatsApiPlugin(), createUserDataApiPlugin()],
 });
