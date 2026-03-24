@@ -5,7 +5,7 @@ import Practice from "./pages/Practice.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import {
   loadAuthUser,
-  loginWithName,
+  loginWithCredentials,
   logout,
   subscribeAuthUser,
 } from "./storage/authStore.js";
@@ -100,9 +100,11 @@ export default function App() {
       return;
     }
 
-    const inputName = window.prompt("请输入登录名（任意昵称即可）");
+    const inputName = window.prompt("请输入登录名");
     if (!inputName) return;
-    loginWithName(inputName);
+    const inputPassword = window.prompt("请输入登录密码");
+    if (!inputPassword) return;
+    loginWithCredentials(inputName, inputPassword);
   }
 
   async function handleManualSync() {

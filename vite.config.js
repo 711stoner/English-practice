@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import crypto from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
@@ -204,6 +205,21 @@ function toObjectArray(value) {
   return value.filter((item) => item && typeof item === "object");
 }
 
+function normalizePassword(raw) {
+  if (typeof raw !== "string") return "";
+  const password = raw.trim();
+  if (!password) return "";
+  return password.slice(0, 128);
+}
+
+function hashPassword(password) {
+  return crypto.createHash("sha256").update(password).digest("hex");
+}
+
+function authError(res) {
+  sendJson(res, 401, { error: "Invalid userId or password" });
+}
+
 async function upsertRecord(record) {
   const normalized = normalizeRecord(record);
   if (!normalized) return null;
@@ -370,19 +386,81 @@ function createUserDataApiPlugin() {
           return;
         }
 
-        if (req.method === "POST" && pathname === "/api/user-data/upsert") {
+        if (req.method === "POST" && pathname === "/api/user-data/sync") {
           const body = await parseJsonBody(req);
           const userId = normalizeUserId(body?.userId || "");
-          if (!userId) {
-            sendJson(res, 400, { error: "Missing userId" });
+          const password = normalizePassword(body?.password || "");
+          if (!userId || !password) {
+            sendJson(res, 400, { error: "Missing userId or password" });
             return;
           }
 
           const payload = await readUserDataFile();
+          const existing = payload.users[userId];
+          const passwordHash = hashPassword(password);
+
+          if (existing && existing.password_hash !== passwordHash) {
+            authError(res);
+            return;
+          }
+
+          if (!existing) {
+            const nextUsers = {
+              ...payload.users,
+              [userId]: {
+                userId,
+                password_hash: passwordHash,
+                sentences: [],
+                history: [],
+                updated_at: new Date().toISOString(),
+              },
+            };
+            await writeUserDataFile({
+              ...payload,
+              users: nextUsers,
+            });
+            sendJson(res, 200, {
+              userId,
+              sentences: [],
+              history: [],
+              updated_at: nextUsers[userId].updated_at,
+            });
+            return;
+          }
+
+          sendJson(res, 200, {
+            userId,
+            sentences: toObjectArray(existing.sentences),
+            history: toObjectArray(existing.history),
+            updated_at:
+              typeof existing.updated_at === "string" ? existing.updated_at : null,
+          });
+          return;
+        }
+
+        if (req.method === "POST" && pathname === "/api/user-data/upsert") {
+          const body = await parseJsonBody(req);
+          const userId = normalizeUserId(body?.userId || "");
+          const password = normalizePassword(body?.password || "");
+          if (!userId || !password) {
+            sendJson(res, 400, { error: "Missing userId or password" });
+            return;
+          }
+
+          const payload = await readUserDataFile();
+          const existing = payload.users[userId];
+          const passwordHash = hashPassword(password);
+
+          if (existing && existing.password_hash !== passwordHash) {
+            authError(res);
+            return;
+          }
+
           const nextUsers = {
             ...payload.users,
             [userId]: {
               userId,
+              password_hash: existing?.password_hash || passwordHash,
               sentences: toObjectArray(body?.sentences),
               history: toObjectArray(body?.history),
               updated_at: new Date().toISOString(),
@@ -421,4 +499,7 @@ function createUserDataApiPlugin() {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), createLearningStatsApiPlugin(), createUserDataApiPlugin()],
+  preview: {
+    allowedHosts: ["xiaomaoenglish.zeabur.app"],
+  },
 });

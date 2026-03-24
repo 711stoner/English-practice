@@ -13,8 +13,9 @@ function normalizeUser(input) {
   if (!input || typeof input !== "object") return null;
   const id = String(input.id || "").trim();
   const name = String(input.name || "").trim();
-  if (!id || !name) return null;
-  return { id, name };
+  const password = String(input.password || "");
+  if (!id || !name || !password) return null;
+  return { id, name, password };
 }
 
 function notifyChanged() {
@@ -27,12 +28,14 @@ export function loadAuthUser() {
   return normalizeUser(parsed);
 }
 
-export function loginWithName(name) {
+export function loginWithCredentials(name, password) {
   const cleanName = String(name || "").trim();
-  if (!cleanName) return null;
+  const cleanPassword = String(password || "");
+  if (!cleanName || !cleanPassword) return null;
   const user = {
     id: `u_${cleanName.toLowerCase().replace(/\s+/g, "_")}`,
     name: cleanName,
+    password: cleanPassword,
   };
   localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
   notifyChanged();

@@ -3,10 +3,12 @@ import { loadHistory, saveHistory } from "./historyStore.js";
 
 const API_BASE = "/api/user-data";
 
-function normalizeUserId(user) {
-  const raw = String(user?.id || "").trim();
-  if (!raw) return "";
-  return raw.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 64);
+function normalizeCredentials(user) {
+  const rawUserId = String(user?.id || "").trim();
+  const userId = rawUserId.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 64);
+  const password = String(user?.password || "");
+  if (!userId || !password) return null;
+  return { userId, password };
 }
 
 function isNonEmptyArray(value) {
@@ -77,9 +79,13 @@ function mergeHistory(local, remote) {
   );
 }
 
-async function fetchUserData(userId) {
-  const res = await fetch(`${API_BASE}?userId=${encodeURIComponent(userId)}`, {
-    cache: "no-store",
+async function fetchUserData(userId, password) {
+  const res = await fetch(`${API_BASE}/sync`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ userId, password }),
   });
   if (!res.ok) {
     throw new Error(`Failed to fetch user data: ${res.status}`);
@@ -87,7 +93,7 @@ async function fetchUserData(userId) {
   return res.json();
 }
 
-async function upsertUserData(userId, payload) {
+async function upsertUserData(userId, password, payload) {
   const res = await fetch(`${API_BASE}/upsert`, {
     method: "POST",
     headers: {
@@ -95,6 +101,7 @@ async function upsertUserData(userId, payload) {
     },
     body: JSON.stringify({
       userId,
+      password,
       sentences: toObjectArray(payload?.sentences),
       history: toObjectArray(payload?.history),
     }),
@@ -106,12 +113,13 @@ async function upsertUserData(userId, payload) {
 }
 
 export async function syncUserDataFromCloud(user) {
-  const userId = normalizeUserId(user);
-  if (!userId) return null;
+  const credentials = normalizeCredentials(user);
+  if (!credentials) return null;
+  const { userId, password } = credentials;
 
   const localSentences = loadSentences();
   const localHistory = loadHistory();
-  const remotePayload = await fetchUserData(userId);
+  const remotePayload = await fetchUserData(userId, password);
   const remoteSentences = toObjectArray(remotePayload?.sentences);
   const remoteHistory = toObjectArray(remotePayload?.history);
 
@@ -130,7 +138,7 @@ export async function syncUserDataFromCloud(user) {
     saveHistory(mergedHistory);
   }
 
-  await upsertUserData(userId, {
+  await upsertUserData(userId, password, {
     sentences: mergedSentences,
     history: mergedHistory,
   });
@@ -143,9 +151,10 @@ export async function syncUserDataFromCloud(user) {
 }
 
 export async function pushUserDataToCloud(user) {
-  const userId = normalizeUserId(user);
-  if (!userId) return null;
-  return upsertUserData(userId, {
+  const credentials = normalizeCredentials(user);
+  if (!credentials) return null;
+  const { userId, password } = credentials;
+  return upsertUserData(userId, password, {
     sentences: loadSentences(),
     history: loadHistory(),
   });
