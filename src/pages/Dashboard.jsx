@@ -57,6 +57,28 @@ function normalizeStatsDate(date) {
   return date;
 }
 
+function historyDayToStatsRow(day) {
+  const date = normalizeStatsDate(day?.date);
+  if (!date) return null;
+  const checkedIn =
+    Boolean(day?.checkedIn) &&
+    typeof day?.checkinAt === "number" &&
+    Number.isFinite(day.checkinAt);
+  const reviewed = Number(day?.reviewedCount || 0);
+  const pass = Number(day?.passCount || 0);
+  return {
+    date,
+    checkin_status: checkedIn ? "已打卡" : "未打卡",
+    new_count: Number(day?.newCount || 0),
+    review_count: reviewed,
+    pass_count: Number(day?.passCount || 0),
+    fuzzy_count: Number(day?.fuzzyCount || 0),
+    fail_count: Number(day?.failCount || 0),
+    pass_rate: reviewed > 0 ? pass / reviewed : Number(day?.passRate || 0),
+    has_record: true,
+  };
+}
+
 const REVIEW_LIST_LIMIT = 10;
 
 export default function Dashboard() {
@@ -145,9 +167,23 @@ export default function Dashboard() {
     [learningStats]
   );
 
+  const historyFallbackStats = useMemo(() => {
+    return (history || [])
+      .map(historyDayToStatsRow)
+      .filter(Boolean)
+      .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  }, [history]);
+
+  const statsRowsSource = hasAnyStats ? learningStats : historyFallbackStats;
+
+  const hasAnyStatsOrFallback = useMemo(
+    () => hasAnyStats || historyFallbackStats.length > 0,
+    [hasAnyStats, historyFallbackStats]
+  );
+
   const recentStatsRows = useMemo(
-    () => selectRecentLearningStatsRows(learningStats, { days: 7, fillMissingDays: true }),
-    [learningStats]
+    () => selectRecentLearningStatsRows(statsRowsSource, { days: 7, fillMissingDays: true }),
+    [statsRowsSource]
   );
 
   const recentHasAnyRecord = useMemo(
@@ -161,16 +197,16 @@ export default function Dashboard() {
   );
 
   const olderHistoryRows = useMemo(
-    () => learningStats.filter((row) => !recentDateSet.has(row.date)),
-    [learningStats, recentDateSet]
+    () => statsRowsSource.filter((row) => !recentDateSet.has(row.date)),
+    [statsRowsSource, recentDateSet]
   );
 
   const visibleStats = useMemo(() => {
     if (showAllStats) {
-      return learningStats.map((row) => ({ ...row, has_record: true }));
+      return statsRowsSource.map((row) => ({ ...row, has_record: true }));
     }
     return recentStatsRows;
-  }, [learningStats, recentStatsRows, showAllStats]);
+  }, [statsRowsSource, recentStatsRows, showAllStats]);
 
   const todayStatsDate = useMemo(
     () => normalizeStatsDate(todayHistory.date),
@@ -270,9 +306,9 @@ export default function Dashboard() {
       <div className="card">
         <h3>学习情况数据</h3>
         {statsLoading && <p>加载中...</p>}
-        {!statsLoading && !hasAnyStats && <p>暂无学习情况数据</p>}
+        {!statsLoading && !hasAnyStatsOrFallback && <p>暂无学习情况数据</p>}
 
-        {!statsLoading && hasAnyStats && (
+        {!statsLoading && hasAnyStatsOrFallback && (
           <>
             {!showAllStats && !recentHasAnyRecord && (
               <p style={{ color: "#666" }}>最近7天暂无学习记录，可查看更早历史数据</p>
