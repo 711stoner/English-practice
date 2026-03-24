@@ -9,6 +9,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, "data");
 const LEARNING_STATS_FILE = path.join(DATA_DIR, "learning_stats.json");
 const USER_DATA_FILE = path.join(DATA_DIR, "user_data.json");
+const RETENTION_DAYS = 365;
 
 function normalizeCount(value) {
   const n = Number(value);
@@ -144,7 +145,7 @@ async function readLearningStatsFile() {
 async function writeLearningStatsFile(payload) {
   const data = {
     version: 1,
-    records: sortByDateDesc(payload.records || []),
+    records: limitRecentLearningStats(payload.records || []),
     created_at:
       typeof payload.created_at === "string" && payload.created_at
         ? payload.created_at
@@ -203,6 +204,21 @@ function normalizeUserId(raw) {
 function toObjectArray(value) {
   if (!Array.isArray(value)) return [];
   return value.filter((item) => item && typeof item === "object");
+}
+
+function limitRecentLearningStats(records, maxDays = RETENTION_DAYS) {
+  const sorted = sortByDateDesc(records || []);
+  return sorted.slice(0, Math.max(1, Math.floor(maxDays)));
+}
+
+function limitRecentHistory(history, maxDays = RETENTION_DAYS) {
+  const sortedDesc = [...toObjectArray(history)].sort((a, b) =>
+    String(b?.date || "").localeCompare(String(a?.date || ""))
+  );
+  const limited = sortedDesc.slice(0, Math.max(1, Math.floor(maxDays)));
+  return limited.sort((a, b) =>
+    String(a?.date || "").localeCompare(String(b?.date || ""))
+  );
 }
 
 function normalizePassword(raw) {
@@ -462,7 +478,7 @@ function createUserDataApiPlugin() {
               userId,
               password_hash: existing?.password_hash || passwordHash,
               sentences: toObjectArray(body?.sentences),
-              history: toObjectArray(body?.history),
+              history: limitRecentHistory(body?.history),
               updated_at: new Date().toISOString(),
             },
           };
