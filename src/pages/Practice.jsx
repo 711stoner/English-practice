@@ -607,6 +607,15 @@ export default function Practice() {
   }
 
   function handleInputKeyDown(e) {
+    const isTypingKey =
+      !e.metaKey &&
+      !e.ctrlKey &&
+      !e.altKey &&
+      (e.key.length === 1 || e.key === "Backspace" || e.key === "Delete");
+    if (isTypingKey) {
+      markActiveStudy({ trackNewStart: true, minIntervalMs: 8000 });
+    }
+
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
       e.preventDefault();
       submitAnswer();
@@ -847,7 +856,6 @@ export default function Practice() {
           rows={4}
           value={input}
           onChange={(e) => {
-            markActiveStudy({ trackNewStart: true, minIntervalMs: 1500 });
             setInput(e.target.value);
             if (inputError) setInputError("");
           }}

@@ -423,11 +423,6 @@ export function markStudyActivity(options = {}) {
 
   if (!marker || marker.date !== today || !Number.isFinite(marker.lastActiveAt)) {
     saveActivityMarker({ date: today, lastActiveAt: ts });
-    upsertToday((day) => ({
-      ...day,
-      activityCount: (day.activityCount || 0) + 1,
-      lastStudyActiveAt: ts,
-    }));
     return 0;
   }
 
@@ -435,12 +430,14 @@ export function markStudyActivity(options = {}) {
   const gained = Math.max(0, Math.min(maxGapSeconds, deltaSec));
 
   saveActivityMarker({ date: today, lastActiveAt: ts });
+  if (gained <= 0) return 0;
+
   upsertToday((day) => ({
     ...day,
     activityCount: (day.activityCount || 0) + 1,
     lastStudyActiveAt: ts,
     durationSeconds: (day.durationSeconds || 0) + (gained > 0 ? gained : 0),
-  }));
+  }), { syncLearningStats: false });
   return gained;
 }
 
