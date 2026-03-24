@@ -135,6 +135,7 @@ export default function Practice() {
   const isWindowActiveRef = useRef(
     typeof document !== "undefined" ? document.visibilityState === "visible" : true
   );
+  const lastStudyActivityMarkRef = useRef(0);
 
   function showActionMessage(msg, duration = 1600) {
     if (actionTimeoutRef.current) {
@@ -316,8 +317,18 @@ export default function Practice() {
   }, [current?.id, submitted]);
 
   function markActiveStudy(options = {}) {
-    const { trackNewStart = false } = options;
+    const { trackNewStart = false, minIntervalMs = 0, force = false } = options;
     if (!isWindowActiveRef.current) return;
+    const now = Date.now();
+
+    if (!force && minIntervalMs > 0) {
+      const elapsed = now - (lastStudyActivityMarkRef.current || 0);
+      if (elapsed < minIntervalMs) {
+        return;
+      }
+    }
+
+    lastStudyActivityMarkRef.current = now;
     markStudyActivity({ maxGapSeconds: 30 });
 
     if (!trackNewStart) return;
@@ -836,7 +847,7 @@ export default function Practice() {
           rows={4}
           value={input}
           onChange={(e) => {
-            markActiveStudy({ trackNewStart: true });
+            markActiveStudy({ trackNewStart: true, minIntervalMs: 1500 });
             setInput(e.target.value);
             if (inputError) setInputError("");
           }}
