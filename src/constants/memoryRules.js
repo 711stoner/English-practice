@@ -8,10 +8,11 @@ export const MEMORY_RULES_SECTIONS = [
     ],
   },
   {
-    title: "记忆算法与评分",
-    summary: "长期间隔由 FSRS 决定，评分映射保持三档。",
+    title: "复合科学记忆曲线",
+    summary: "系统采用 FSRS 长期调度 + 同日强化 + 1/3/7/15 天早期巩固。",
     points: [
       "主算法：ts-fsrs（enable_fuzz=true，enable_short_term=false）。",
+      "新句和早期复习不会直接放任长间隔，前几次成功回忆会按 1 天、3 天、7 天、15 天逐步放开。",
       "会（记住了）-> Good；模糊（有点难）-> Hard；不会（忘了）-> Again。",
     ],
   },
@@ -19,9 +20,9 @@ export const MEMORY_RULES_SECTIONS = [
     title: "拼写确认规则",
     summary: "系统按句子熟悉度分层确认，新句更严格，稳句更高效。",
     points: [
-      "new/unfamiliar：保持双重确认（第一轮可模糊，第二轮需精确）。",
-      "weak：精确一次可评分；若仅模糊通过，仍需再确认一次。",
-      "stable：一次通过即可评分。",
+      "new/unfamiliar：保持双重确认（第一轮可模糊，第二轮需内容准确；标点、空格、大小写只提示）。",
+      "weak：一次内容准确可评分；若仅模糊通过，仍需再确认一次。",
+      "stable：一次内容正确即可评分。",
     ],
   },
   {
@@ -29,7 +30,7 @@ export const MEMORY_RULES_SECTIONS = [
     summary: "模糊通过按句长分层，系统重点判断内容回忆质量。",
     points: [
       "短句更严格，长句允许少量非核心误差，但核心结构错误不放行。",
-      "标点和大小写问题只做轻提醒，不作为核心答错阻断。",
+      "标点、空格和大小写问题只做轻提醒，不作为核心答错阻断。",
     ],
   },
   {
@@ -38,7 +39,8 @@ export const MEMORY_RULES_SECTIONS = [
     points: [
       "Practice 主队列每日上限约 15 句。",
       "先安排待复习（含逾期），再按当天负荷补充新学。",
-      "难句与新句会在同日会话中更容易被再次安排强化。",
+      "当日新增句子不会立刻算作今日新学，会从次日开始进入新学池。",
+      "new / unfamiliar / 难句会在同日会话中更容易被再次安排强化。",
     ],
   },
   {
@@ -56,14 +58,17 @@ export const MEMORY_RULES_SECTIONS = [
     points: [
       "本轮看过提示、用过朗读或点过“不会这句”，本句最高按 Hard 记录。",
       "只有独立完成回忆且未用辅助，才允许记为 Good。",
+      "若本轮只能记为 Hard，本句后续间隔也会按更短的早期巩固阶段处理。",
     ],
   },
   {
     title: "打卡规则",
-    summary: "每轮按复习结果统计，达标后当天可打卡一次。",
+    summary: "当天主队列做完后，若还没达标，会继续做计分巩固，直到出现打卡按钮。",
     points: [
       "统计字段：reviewed_count / passed_count / fuzzy_count / failed_count。",
-      "达标条件：reviewed_count>=8，pass_rate>=0.5，fail_rate<0.25。",
+      "综合回忆分=(会+模糊x0.6)/复习数，用来区分“基本会”和“勉强想起”。",
+      "打卡条件：成功回忆（会或模糊）>=3 次，综合回忆分>=0.45，会或模糊率>=70%，失败率<30%。",
+      "当天主队列结束但未达标时，可继续做“计入本轮”的巩固练习，直到达到打卡线。",
       "同一天只能打卡一次。",
     ],
   },
@@ -81,6 +86,7 @@ export const MEMORY_RULES_SECTIONS = [
     points: [
       "数据写入 data/learning_stats.json（按日期 upsert，不重复追加）。",
       "核心字段包含：今日新学、今日已复习、通过/模糊/失败、打卡状态、study_seconds。",
+      "今日新学只统计当天真正开始练习的新句；当日新增句子会从次日再进入新学统计。",
     ],
   },
   {
@@ -95,4 +101,3 @@ export const MEMORY_RULES_SECTIONS = [
 
 export const MEMORY_RULES_FOOTNOTE =
   "规则会随系统优化逐步微调，请以当前应用内说明为准。";
-

@@ -56,7 +56,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [user?.id]);
+  }, [user]);
 
   useEffect(() => {
     const schedulePush = () => {

@@ -6,6 +6,10 @@ import {
   toLearningStatsDate,
   upsertDailyLearningStats as upsertDailyLearningStatsInStore,
 } from "./learningStatsStore.js";
+import {
+  getRecallScoreFromCounts,
+  judgeCompositeSessionSummary,
+} from "../utils/compositeMemoryCurve.js";
 
 const STORAGE_KEY = "history";
 const STUDY_ACTIVITY_KEY = "study_activity_marker";
@@ -65,6 +69,7 @@ function defaultDay(date) {
     fuzzyCount: 0,
     failCount: 0,
     passRate: 0,
+    recallScore: 0,
     checkedIn: false,
     checkinAt: null,
     createdAt: now,
@@ -173,6 +178,15 @@ function normalizeDay(day, fallbackDate) {
   const now = Date.now();
   const reviewedCount = normalizeCount(base.reviewedCount);
   const durationSeconds = normalizeCount(base.durationSeconds);
+  const passCount = normalizeCount(base.passCount);
+  const fuzzyCount = normalizeCount(base.fuzzyCount);
+  const failCount = normalizeCount(base.failCount);
+  const autoPassRate = reviewedCount > 0 ? passCount / reviewedCount : 0;
+  const autoRecallScore = getRecallScoreFromCounts(
+    passCount,
+    fuzzyCount,
+    reviewedCount
+  );
 
   return {
     ...base,
@@ -187,14 +201,15 @@ function normalizeDay(day, fallbackDate) {
       Number.isFinite(base.lastStudyActiveAt)
         ? base.lastStudyActiveAt
         : null,
-    passCount: normalizeCount(base.passCount),
-    fuzzyCount: normalizeCount(base.fuzzyCount),
-    failCount: normalizeCount(base.failCount),
+    passCount,
+    fuzzyCount,
+    failCount,
     passRate: Number.isFinite(Number(base.passRate))
       ? Number(base.passRate)
-      : reviewedCount > 0
-        ? normalizeCount(base.passCount) / reviewedCount
-        : 0,
+      : autoPassRate,
+    recallScore: Number.isFinite(Number(base.recallScore))
+      ? Number(base.recallScore)
+      : autoRecallScore,
     checkedIn: typeof base.checkedIn === "boolean" ? base.checkedIn : false,
     checkinAt:
       typeof base.checkinAt === "number" && Number.isFinite(base.checkinAt)
@@ -394,6 +409,11 @@ export function recordDailyReviewCount(count = 1, resultType = "pass") {
 
     const reviewedCount = next.reviewedCount || 0;
     next.passRate = reviewedCount > 0 ? (next.passCount || 0) / reviewedCount : 0;
+    next.recallScore = getRecallScoreFromCounts(
+      next.passCount || 0,
+      next.fuzzyCount || 0,
+      reviewedCount
+    );
     return next;
   });
 }
@@ -477,6 +497,7 @@ export function getDashboardStats() {
     pass_count: today.passCount || 0,
     fuzzy_count: today.fuzzyCount || 0,
     fail_count: today.failCount || 0,
+    recall_score: today.recallScore || 0,
   };
 }
 
@@ -547,25 +568,5 @@ export function clearTodayGhostStats() {
 }
 
 export function judgeSessionPass(summary) {
-  const reviewedCount = normalizeCount(summary?.reviewed_count);
-  const passedCount = normalizeCount(summary?.passed_count);
-  const fuzzyCount = normalizeCount(summary?.fuzzy_count);
-  const failedCount = normalizeCount(summary?.failed_count);
-  const passRate = reviewedCount > 0 ? passedCount / reviewedCount : 0;
-  const failRate = reviewedCount > 0 ? failedCount / reviewedCount : 0;
-
-  const passed =
-    reviewedCount >= 8 &&
-    passRate >= 0.5 &&
-    failRate < 0.25;
-
-  return {
-    passed,
-    reviewed_count: reviewedCount,
-    passed_count: passedCount,
-    fuzzy_count: fuzzyCount,
-    failed_count: failedCount,
-    pass_rate: passRate,
-    fail_rate: failRate,
-  };
+  return judgeCompositeSessionSummary(summary);
 }

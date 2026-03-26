@@ -178,11 +178,13 @@ export function buildTodayStudyPlan({
   const normalizedMaxLoad = clamp(Number(maxDailyLoad) || MAX_DAILY_LOAD_DEFAULT, 1, 30);
   const reviewCandidatesRaw = [];
   const newCandidatesRaw = [];
+  let deferredNewCount = 0;
 
   for (const sentence of sentences || []) {
     if (!sentence || sentence?.srs?.mastered) continue;
     const reps = Number(sentence?.srs?.reps || 0);
     const dueDate = sentence?.srs?.dueAt ? sentence._dueDate || null : null;
+    const createdDate = sentence?._createdDate || null;
 
     if (reps > 0) {
       if (dueDate && dueDate <= today) {
@@ -191,7 +193,13 @@ export function buildTodayStudyPlan({
       continue;
     }
 
-    // reps=0 视为新学候选池
+    // 当日新增句子从次日才进入新学候选池
+    if (createdDate && createdDate >= today) {
+      deferredNewCount += 1;
+      continue;
+    }
+
+    // reps=0 且非当日新增，视为新学候选池
     newCandidatesRaw.push(sentence);
   }
 
@@ -241,6 +249,7 @@ export function buildTodayStudyPlan({
     adjustedNewQuota: rawNewQuota,
     reviewPlanned,
     newPlanned,
+    deferredNewCount,
     queueIds,
     idMeta,
     protectionReasons: protection.reasons,

@@ -77,6 +77,14 @@ function normalizeSpaceKeepCase(text) {
     .replace(/\s+/g, " ");
 }
 
+function normalizeWordSpacing(text) {
+  return String(text || "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, "")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
 function normalizePunctuationText(text) {
   return String(text || "")
     .replace(/[，]/g, ",")
@@ -192,6 +200,9 @@ export function judgeSpellingAttempt(userText, answerText) {
     answerCaseComparable &&
     userCaseComparable.toLowerCase() === answerCaseComparable.toLowerCase() &&
     userCaseComparable !== answerCaseComparable;
+  const hasSpacingIssue =
+    userCompare === answerCompare &&
+    normalizeWordSpacing(userText) !== normalizeWordSpacing(answerText);
 
   const hasPunctuationIssue =
     extractPunctuationSignature(userText) !== extractPunctuationSignature(answerText);
@@ -199,6 +210,9 @@ export function judgeSpellingAttempt(userText, answerText) {
   const formattingHints = [];
   if (hasCapitalizationIssue) {
     formattingHints.push("句首或专有名词大小写可再规范一些");
+  }
+  if (hasSpacingIssue) {
+    formattingHints.push("空格可再规范一些（不影响本句通过）");
   }
   if (hasPunctuationIssue) {
     formattingHints.push("标点可再规范一些（不影响本句通过）");
@@ -218,6 +232,7 @@ export function judgeSpellingAttempt(userText, answerText) {
       formattingHints,
       hasPunctuationIssue,
       hasCapitalizationIssue,
+      hasSpacingIssue,
     };
   }
 
@@ -281,5 +296,6 @@ export function judgeSpellingAttempt(userText, answerText) {
     formattingHints,
     hasPunctuationIssue,
     hasCapitalizationIssue,
+    hasSpacingIssue,
   };
 }

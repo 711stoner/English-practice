@@ -1,3 +1,5 @@
+import { getRecallScoreFromCounts } from "../utils/compositeMemoryCurve.js";
+
 const STORAGE_KEY = "learning_stats";
 const CHANGE_EVENT = "learning-stats-changed";
 const API_BASE = "/api/learning-stats";
@@ -111,6 +113,7 @@ function defaultRecord(date, nowIso) {
     fuzzy_count: 0,
     fail_count: 0,
     pass_rate: 0,
+    recall_score: 0,
     created_at: nowIso,
     updated_at: nowIso,
   };
@@ -131,6 +134,11 @@ function normalizeRecord(input) {
   const fuzzyCount = normalizeCount(input.fuzzy_count);
   const failCount = normalizeCount(input.fail_count);
   const autoRate = reviewCount > 0 ? passCount / reviewCount : 0;
+  const autoRecallScore = getRecallScoreFromCounts(
+    passCount,
+    fuzzyCount,
+    reviewCount
+  );
 
   return {
     ...base,
@@ -144,6 +152,9 @@ function normalizeRecord(input) {
     fail_count: failCount,
     pass_rate: normalizePassRate(
       typeof input.pass_rate === "number" ? input.pass_rate : autoRate
+    ),
+    recall_score: normalizePassRate(
+      typeof input.recall_score === "number" ? input.recall_score : autoRecallScore
     ),
     created_at: toIsoString(input.created_at, nowIso),
     updated_at: toIsoString(input.updated_at, nowIso),
@@ -297,6 +308,10 @@ function mergeRecord(records, patch) {
       patch.pass_rate == null
         ? existing.pass_rate
         : normalizePassRate(patch.pass_rate),
+    recall_score:
+      patch.recall_score == null
+        ? existing.recall_score
+        : normalizePassRate(patch.recall_score),
     created_at: existing.created_at || nowIso,
     updated_at: nowIso,
   });
@@ -415,6 +430,7 @@ export async function syncHistoryDayToLearningStats(day) {
   const passCount = normalizeCount(day.passCount);
   const fuzzyCount = normalizeCount(day.fuzzyCount);
   const failCount = normalizeCount(day.failCount);
+  const recallScore = getRecallScoreFromCounts(passCount, fuzzyCount, reviewCount);
   const checkedIn =
     Boolean(day.checkedIn) &&
     typeof day.checkinAt === "number" &&
@@ -430,6 +446,7 @@ export async function syncHistoryDayToLearningStats(day) {
     pass_count: passCount,
     fuzzy_count: fuzzyCount,
     fail_count: failCount,
+    recall_score: recallScore,
     pass_rate:
       reviewCount > 0
         ? passCount / reviewCount

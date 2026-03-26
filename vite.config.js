@@ -24,6 +24,14 @@ function normalizePassRate(value) {
   return Number(n.toFixed(4));
 }
 
+function getRecallScore(passCount, fuzzyCount, reviewCount) {
+  const reviewed = normalizeCount(reviewCount);
+  if (reviewed <= 0) return 0;
+  return normalizePassRate(
+    (normalizeCount(passCount) + normalizeCount(fuzzyCount) * 0.6) / reviewed
+  );
+}
+
 function normalizeDate(date) {
   if (typeof date !== "string") return "";
   const raw = date.trim();
@@ -44,7 +52,9 @@ function normalizeRecord(input) {
   const checkedIn = Boolean(input.checked_in);
   const reviewCount = normalizeCount(input.review_count);
   const passCount = normalizeCount(input.pass_count);
+  const fuzzyCount = normalizeCount(input.fuzzy_count);
   const autoRate = reviewCount > 0 ? passCount / reviewCount : 0;
+  const autoRecallScore = getRecallScore(passCount, fuzzyCount, reviewCount);
 
   return {
     date,
@@ -54,10 +64,15 @@ function normalizeRecord(input) {
     review_count: reviewCount,
     study_seconds: normalizeCount(input.study_seconds),
     pass_count: passCount,
-    fuzzy_count: normalizeCount(input.fuzzy_count),
+    fuzzy_count: fuzzyCount,
     fail_count: normalizeCount(input.fail_count),
     pass_rate: normalizePassRate(
       typeof input.pass_rate === "number" ? input.pass_rate : autoRate
+    ),
+    recall_score: normalizePassRate(
+      typeof input.recall_score === "number"
+        ? input.recall_score
+        : autoRecallScore
     ),
     created_at:
       typeof input.created_at === "string" && input.created_at

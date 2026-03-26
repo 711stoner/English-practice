@@ -32,6 +32,16 @@ import {
   getPracticeFamiliarityTier,
 } from "../utils/familiarityTier.js";
 import { judgeSpellingAttempt } from "../utils/spellingJudge.js";
+import {
+  applyCompositeIntervalCap,
+  getCompositeIntervalPlan,
+  getSameDayReinforcementWindow,
+  MAX_FAIL_RATE,
+  MIN_RECALL_SCORE,
+  MIN_SUCCESSFUL_REVIEWS,
+  MIN_SUCCESS_RATE,
+  shouldScheduleSameDayReinforcement,
+} from "../utils/compositeMemoryCurve.js";
 
 const MASTERY_REPS = 8;
 const MASTERY_INTERVAL_DAYS = 730;
@@ -72,7 +82,10 @@ function buildPlanFromSource(sentences, sessionSkipUniqueCount = 0) {
   const decorated = (sentences || []).map((sentence) => {
     const dueAt = Number(sentence?.srs?.dueAt || 0);
     const dueDate = Number.isFinite(dueAt) && dueAt > 0 ? getCstDateString(dueAt) : today;
-    return { ...sentence, _dueDate: dueDate };
+    const createdAt = Number(sentence?.createdAt || 0);
+    const createdDate =
+      Number.isFinite(createdAt) && createdAt > 0 ? getCstDateString(createdAt) : null;
+    return { ...sentence, _dueDate: dueDate, _createdDate: createdDate };
   });
 
   return buildTodayStudyPlan({
@@ -97,6 +110,7 @@ export default function Practice() {
     adjustedNewQuota: 0,
     reviewPlanned: 0,
     newPlanned: 0,
+    deferredNewCount: 0,
     protectionReasons: [],
   }));
 
@@ -131,6 +145,7 @@ export default function Practice() {
   const reinforcementInsertedRef = useRef(new Set());
   const startedNewInSessionRef = useRef(new Set());
   const sentencePolicyRef = useRef(new Map());
+  const sessionResultMapRef = useRef(new Map());
   const reinforcementBudgetRef = useRef(0);
   const isWindowActiveRef = useRef(
     typeof document !== "undefined" ? document.visibilityState === "visible" : true
@@ -164,6 +179,72 @@ export default function Practice() {
     const next = { ...base, ...patch };
     sentencePolicyRef.current.set(sentenceId, next);
     return next;
+  }
+
+  function recordSessionResult(sentenceId, resultType) {
+    if (!sentenceId) return;
+    const base = sessionResultMapRef.current.get(sentenceId) || {
+      pass: 0,
+      fuzzy: 0,
+      fail: 0,
+      lastResult: "",
+      updatedAt: 0,
+    };
+    const next = {
+      ...base,
+      pass: base.pass + (resultType === "pass" ? 1 : 0),
+      fuzzy: base.fuzzy + (resultType === "fuzzy" ? 1 : 0),
+      fail: base.fail + (resultType === "fail" ? 1 : 0),
+      lastResult: resultType,
+      updatedAt: Date.now(),
+    };
+    sessionResultMapRef.current.set(sentenceId, next);
+  }
+
+  function buildCheckinRecoveryQueue() {
+    const sentenceMap = new Map((sentences || []).map((item) => [item.id, item]));
+    const entries = Array.from(sessionResultMapRef.current.entries())
+      .map(([id, stats]) => ({ id, stats, sentence: sentenceMap.get(id) }))
+      .filter((item) => item.sentence && !item.sentence.srs?.mastered)
+      .filter((item) => item.stats.fail > 0 || item.stats.fuzzy > 0)
+      .sort((a, b) => {
+        if (b.stats.fail !== a.stats.fail) return b.stats.fail - a.stats.fail;
+        if (b.stats.fuzzy !== a.stats.fuzzy) return b.stats.fuzzy - a.stats.fuzzy;
+        if (a.stats.lastResult !== b.stats.lastResult) {
+          if (a.stats.lastResult === "fail") return -1;
+          if (b.stats.lastResult === "fail") return 1;
+        }
+        return (a.sentence.srs?.intervalDays || 0) - (b.sentence.srs?.intervalDays || 0);
+      });
+
+    if (entries.length === 0) return [];
+
+    const counts = new Map(
+      entries.map((item) => [
+        item.id,
+        Math.min(3, Math.max(1, item.stats.fail * 2 + item.stats.fuzzy)),
+      ])
+    );
+    const order = entries.map((item) => item.id);
+    const queue = [];
+
+    while (queue.length < 6) {
+      let added = false;
+      for (const id of order) {
+        const remaining = counts.get(id) || 0;
+        if (remaining <= 0) continue;
+        if (queue[queue.length - 1] === id && order.length > 1) continue;
+        queue.push(id);
+        counts.set(id, remaining - 1);
+        added = true;
+        if (queue.length >= 6) break;
+      }
+      if (!added) break;
+    }
+
+    if (queue.length > 0) return queue;
+
+    return order.slice(0, 3);
   }
 
   function getCurrentTier() {
@@ -203,6 +284,7 @@ export default function Practice() {
     reinforcementInsertedRef.current.clear();
     startedNewInSessionRef.current.clear();
     sentencePolicyRef.current.clear();
+    sessionResultMapRef.current.clear();
     reinforcementBudgetRef.current = 0;
     resetStudyActivityMarker();
 
@@ -261,11 +343,14 @@ export default function Practice() {
     return sentences.find((s) => s.id === currentId) || null;
   }, [sentences, queueIds, isRandomMode, randomId]);
 
-  const currentTier = useMemo(() => {
-    if (!current || isRandomMode) return "weak";
-    return getCurrentTier();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current?.id, idMeta, isRandomMode, sessionSkipCounts]);
+  const currentTier =
+    !current || isRandomMode
+      ? "weak"
+      : getPracticeFamiliarityTier(
+          current,
+          idMeta[current.id],
+          getSentencePolicy(current.id)
+        );
 
   const currentConfirmPolicy = useMemo(
     () => getConfirmationPolicyByTier(currentTier),
@@ -279,7 +364,6 @@ export default function Practice() {
     }
 
     lastQuestionIdRef.current = currentId;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current?.id]);
 
   useEffect(() => {
@@ -348,6 +432,21 @@ export default function Practice() {
     setDailyQueue(latest, { showMessage: "已重新安排今日练习" });
   }
 
+  function continueCheckinRecovery() {
+    const nextQueue = buildCheckinRecoveryQueue();
+    if (nextQueue.length === 0) {
+      showActionMessage("当前没有可继续强化的句子");
+      return;
+    }
+
+    setIsRandomMode(false);
+    setRandomId(null);
+    setQueueIds(nextQueue);
+    resetPracticeState();
+    setCheckinFeedback("");
+    showActionMessage("已继续达标巩固，完成后再检查打卡标准", 2200);
+  }
+
   function enterRandomMode() {
     setIsRandomMode(true);
     setRandomId(pickRandomId(sentences));
@@ -400,8 +499,13 @@ export default function Practice() {
   const remainingCount = isRandomMode ? 0 : queueIds.length;
   const progressHint =
     plannedCount > 0
-      ? `已评分 ${completedCount} 句，当前剩余 ${remainingCount} 次练习`
+      ? `本轮已评分 ${completedCount} 句，待练 ${remainingCount} 句`
       : "今日暂无待练习句子";
+  const sessionTargetHint = `成功回忆>=${MIN_SUCCESSFUL_REVIEWS}次，综合回忆分>=${Math.round(
+    MIN_RECALL_SCORE * 100
+  )}%，会或模糊>=${Math.round(MIN_SUCCESS_RATE * 100)}%，失败率<${Math.round(
+    MAX_FAIL_RATE * 100
+  )}%`;
 
   if (sentences.length === 0) {
     return (
@@ -422,7 +526,7 @@ export default function Practice() {
         return;
       }
       if (!judgedSession.passed) {
-        setCheckinFeedback("未达到打卡标准");
+        setCheckinFeedback("继续巩固到达标后才可打卡");
         return;
       }
       markDailyCheckin();
@@ -440,6 +544,11 @@ export default function Practice() {
           <div style={{ marginTop: 6, color: "#666" }}>
             今日安排：复习 {planInfo.reviewPlanned || 0} 句，新学 {planInfo.newPlanned || 0} 句
           </div>
+          {(planInfo.deferredNewCount || 0) > 0 && (
+            <div style={{ marginTop: 6, color: "#666" }}>
+              今日新增 {planInfo.deferredNewCount} 句，明天起进入新学池
+            </div>
+          )}
           {(planInfo.protectionReasons || []).length > 0 && (
             <div style={{ marginTop: 6, color: "#666" }}>
               系统已自动控量：{planInfo.protectionReasons.join("、")}
@@ -455,8 +564,16 @@ export default function Practice() {
             <div>会（grade=2）：{judgedSession.passed_count}</div>
             <div>模糊（grade=1）：{judgedSession.fuzzy_count}</div>
             <div>不会（grade=0）：{judgedSession.failed_count}</div>
-            <div>通过率：{Math.round(judgedSession.pass_rate * 100)}%</div>
+            <div>成功回忆（会或模糊）：{judgedSession.successful_count}</div>
+            <div>会率：{Math.round(judgedSession.pass_rate * 100)}%</div>
+            <div>综合回忆分：{Math.round(judgedSession.recall_score * 100)}%</div>
+            <div>会或模糊率：{Math.round(judgedSession.success_rate * 100)}%</div>
             <div>失败率：{Math.round(judgedSession.fail_rate * 100)}%</div>
+            <div style={{ marginTop: 8, color: "#666" }}>
+              {judgedSession.passed
+                ? "已达到今日打卡标准"
+                : "今日计划已做完，但还没达到今日打卡标准，需要继续巩固"}
+            </div>
 
             <div style={{ marginTop: 10 }}>
               <button
@@ -469,14 +586,25 @@ export default function Practice() {
                   ? "今日已打卡"
                   : canCheckin
                     ? "今日打卡"
-                    : "未达到打卡标准"}
+                    : "继续巩固后打卡"}
                 <span className="paw" />
               </button>
             </div>
 
             {!judgedSession.passed && (
               <div style={{ marginTop: 8, color: "#666" }}>
-                打卡条件：复习≥8，通过率≥50%，失败率&lt;25%
+                今日打卡标准：{sessionTargetHint}
+              </div>
+            )}
+            {!judgedSession.passed && (
+              <div style={{ marginTop: 10 }}>
+                <button
+                  className="button secondary"
+                  type="button"
+                  onClick={continueCheckinRecovery}
+                >
+                  继续巩固到达标（计入本轮）
+                </button>
               </div>
             )}
             {checkinFeedback && (
@@ -485,12 +613,14 @@ export default function Practice() {
           </div>
         )}
 
-        <div style={{ marginTop: 12 }}>
-          <button className="button" type="button" onClick={enterRandomMode}>
-            随机练习一句（不计入今日队列）
-            <span className="paw" />
-          </button>
-        </div>
+        {(judgedSession.passed || checkedInToday) && (
+          <div style={{ marginTop: 12 }}>
+            <button className="button" type="button" onClick={enterRandomMode}>
+              随机练习一句（不计入今日队列）
+              <span className="paw" />
+            </button>
+          </div>
+        )}
       </div>
     );
   }
@@ -533,7 +663,7 @@ export default function Practice() {
         setShowHint(false);
         setFuzzyNotice(fuzzyMessage);
         setFormattingHints(nextFormattingHints);
-        setConfirmPrompt("请再默写一次确认（第二次需精确拼写）");
+        setConfirmPrompt("请再默写一次确认（第二次只要求内容准确；标点/空格/大小写只提示）");
         const notice = fuzzyOk ? `✅ 内容正确：${fuzzyMessage}` : "✅ 内容正确";
         setAnswerMessage(notice);
         return;
@@ -573,7 +703,7 @@ export default function Practice() {
         setShowHint(false);
         setFuzzyNotice(fuzzyMessage);
         setFormattingHints(nextFormattingHints);
-        setConfirmPrompt("这句接近正确，请再默写一次（需精确拼写）");
+        setConfirmPrompt("这句接近正确，请再默写一次（只要求内容准确；标点/空格/大小写只提示）");
         setAnswerMessage(`✅ 内容正确：${fuzzyMessage}`);
         return;
       }
@@ -694,6 +824,8 @@ export default function Practice() {
     const now = Date.now();
     const currentId = current.id;
     const sentencePolicy = getSentencePolicy(currentId);
+    const reviewTier = getCurrentTier();
+    const fuzzyFirstPass = fuzzyFirstPassIdsRef.current.has(currentId);
 
     let effectiveQ = q;
     let capReason = "";
@@ -720,7 +852,18 @@ export default function Practice() {
       if (s.id !== currentId) return s;
       const base = ensureSrs(s).srs;
       const rating = ratingFromQuality(effectiveQ);
-      const updatedCard = rateFsrsCard(base.fsrs, rating, now);
+      const ratedCard = rateFsrsCard(base.fsrs, rating, now);
+      const curvePlan = getCompositeIntervalPlan({
+        tier: reviewTier,
+        nextReps: getFsrsReps(ratedCard),
+        effectiveQ,
+        usedAssistance: shouldCapToHard,
+      });
+      const { card: updatedCard } = applyCompositeIntervalCap(
+        ratedCard,
+        curvePlan,
+        now
+      );
       const intervalDays = getFsrsIntervalDays(updatedCard);
       const reps = getFsrsReps(updatedCard);
       const lapses = getFsrsLapses(updatedCard);
@@ -751,6 +894,7 @@ export default function Practice() {
     setSentences(next);
 
     const resultType = effectiveQ >= 4 ? "pass" : effectiveQ >= 3 ? "fuzzy" : "fail";
+    recordSessionResult(currentId, resultType);
     recordDailyReviewCount(1, resultType);
 
     if (!isRandomMode) {
@@ -765,19 +909,22 @@ export default function Practice() {
       const shouldReinforce =
         !reinforcementInsertedRef.current.has(currentId) &&
         reinforcementBudgetRef.current < MAX_SESSION_REINFORCEMENTS &&
-        (effectiveQ <= 3 ||
-          fuzzyFirstPassIdsRef.current.has(currentId) ||
-          idMeta[currentId]?.type === "new" ||
-          sentencePolicy.sameSessionMiss >= 2);
+        shouldScheduleSameDayReinforcement({
+          tier: reviewTier,
+          effectiveQ,
+          fuzzyFirstPass,
+          sameSessionMiss: sentencePolicy.sameSessionMiss,
+        });
 
       setQueueIds((prev) => {
         const [, ...tail] = prev;
         if (!shouldReinforce) return tail;
 
+        const window = getSameDayReinforcementWindow(reviewTier);
         reinforcementInsertedRef.current.add(currentId);
         reinforcementBudgetRef.current += 1;
         setSessionReinforcementCount(reinforcementBudgetRef.current);
-        return injectSameSessionReinforcement(tail, currentId, { minGap: 3, maxGap: 5 });
+        return injectSameSessionReinforcement(tail, currentId, window);
       });
     } else {
       setRandomId(pickRandomId(next));
@@ -803,13 +950,29 @@ export default function Practice() {
           <div style={{ marginTop: 4, color: "#666", fontSize: 13 }}>
             今日已安排：复习 {planInfo.reviewPlanned || 0} 句，新学 {planInfo.newPlanned || 0} 句
           </div>
+          {(planInfo.deferredNewCount || 0) > 0 && (
+            <div style={{ marginTop: 4, color: "#666", fontSize: 12 }}>
+              今日新增 {planInfo.deferredNewCount} 句，明天起进入新学池
+            </div>
+          )}
           {(planInfo.protectionReasons || []).length > 0 && (
             <div style={{ marginTop: 4, color: "#666", fontSize: 12 }}>
               自动控量：{planInfo.protectionReasons.join("、")}
             </div>
           )}
           <div style={{ marginTop: 4, color: "#666", fontSize: 12 }}>
+            复合曲线：FSRS长期调度 + 同日强化 + 1/3/7/15天早期巩固
+          </div>
+          <div style={{ marginTop: 4, color: "#666", fontSize: 12 }}>
             同日强化回看：{sessionReinforcementCount}/{MAX_SESSION_REINFORCEMENTS}
+          </div>
+          {judgedSession.reviewed_count > 0 && (
+            <div style={{ marginTop: 4, color: "#666", fontSize: 12 }}>
+              当前综合回忆分：{Math.round(judgedSession.recall_score * 100)}%
+            </div>
+          )}
+          <div style={{ marginTop: 4, color: "#666", fontSize: 12 }}>
+            打卡线：{sessionTargetHint}
           </div>
         </div>
       )}
@@ -837,6 +1000,11 @@ export default function Practice() {
         {!isRandomMode && (
           <div style={{ marginTop: 6, color: "#666", fontSize: 12 }}>
             当前确认强度：{currentConfirmPolicy.label}
+          </div>
+        )}
+        {!isRandomMode && currentConfirmPolicy.requireSecondConfirm && (
+          <div style={{ marginTop: 4, color: "#666", fontSize: 12 }}>
+            严格确认只要求内容正确；标点、空格、大小写错误只提醒，不拦截。
           </div>
         )}
       </div>
@@ -953,7 +1121,7 @@ export default function Practice() {
 
       {!isRandomMode && (
         <div style={{ marginTop: 12, color: "#666", fontSize: 12 }}>
-          学习说明：系统会优先安排待复习句子，再按负荷动态补充新学句子。
+          学习说明：系统会优先安排待复习句子，再按负荷动态补充新学；当日新增句子从次日才进入新学池，并用复合记忆曲线控制早期间隔。
         </div>
       )}
     </div>

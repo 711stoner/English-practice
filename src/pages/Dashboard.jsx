@@ -75,6 +75,7 @@ function historyDayToStatsRow(day) {
     fuzzy_count: Number(day?.fuzzyCount || 0),
     fail_count: Number(day?.failCount || 0),
     pass_rate: reviewed > 0 ? pass / reviewed : Number(day?.passRate || 0),
+    recall_score: Number(day?.recallScore || 0),
     has_record: true,
   };
 }
@@ -299,6 +300,12 @@ export default function Dashboard() {
           <div className="card" style={{ minWidth: 160 }}>
             <div>今日有效学习时长</div>
             <strong style={{ fontSize: 24 }}>{formatDuration(todayHistory.durationSeconds || 0)}</strong>
+          </div>
+          <div className="card" style={{ minWidth: 160 }}>
+            <div>今日综合回忆分</div>
+            <strong style={{ fontSize: 24 }}>
+              {Math.round((todayHistory.recallScore || 0) * 100)}%
+            </strong>
           </div>
           <div className="card" style={{ minWidth: 160 }}>
             <div>连续打卡天数</div>
