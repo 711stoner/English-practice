@@ -1,0 +1,15 @@
+name = "english-practice"
+type = "javascript"
+main = "src/main.jsx"
+
+[env.production]
+route = "452988d0.english-practice-8hp.pages.dev/*"
+zone_id = ""
+
+[build]
+command = "npm run build"
+cwd = "./"
+
+[build.upload]
+format = "modules"
+dir = "dist"
