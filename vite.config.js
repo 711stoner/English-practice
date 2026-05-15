@@ -531,6 +531,7 @@ function createUserDataApiPlugin() {
 export default defineConfig({
   plugins: [react(), createLearningStatsApiPlugin(), createUserDataApiPlugin()],
   preview: {
-    allowedHosts: ["xiaomaoenglish.zeabur.app"],
+    host: "0.0.0.0",
+    port: 4173,
   },
 });
