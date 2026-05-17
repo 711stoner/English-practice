@@ -6,9 +6,6 @@ import { BOOKS } from "../data/books.js";
 
 export default function SentenceBank() {
   const { sentences, setSentences } = useSentences();
-  const [text, setText] = useState("");
-  const [meaning, setMeaning] = useState("");
-
   const [bulkText, setBulkText] = useState("");
   const [bulkResult, setBulkResult] = useState(null);
 
@@ -20,25 +17,6 @@ export default function SentenceBank() {
 
   const [selectedBook, setSelectedBook] = useState(null);
   const [bookImportResult, setBookImportResult] = useState(null);
-
-  function handleAdd(e) {
-    e.preventDefault();
-    const cleanText = text.trim();
-    const cleanMeaning = meaning.trim();
-    if (!cleanText || !cleanMeaning) return;
-
-    const sentence = createSentence({
-      text: cleanText,
-      meaning: cleanMeaning,
-      tags: [],
-    });
-
-    const next = [sentence, ...sentences];
-    setSentences(next);
-
-    setText("");
-    setMeaning("");
-  }
 
   function handleDelete(id) {
     const next = sentences.filter((s) => s.id !== id);
@@ -383,30 +361,6 @@ export default function SentenceBank() {
 
   return (
     <div>
-      <div className='card'>
-        <h2>添加句子</h2>
-        <form onSubmit={handleAdd}>
-          <label>英文句子</label>
-          <input
-            className='input' value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="请输入英文句子"
-          />
-
-          <label>中文释义</label>
-          <input
-            className='input' value={meaning}
-            onChange={(e) => setMeaning(e.target.value)}
-            placeholder="请输入中文释义"
-          />
-
-          <button className='button' type='submit' >
-            添加
-            <span className='paw' />
-          </button>
-        </form>
-      </div>
-
       <div className='card'>
         <h2>📚 从书籍导入</h2>
         <p style={{ color: "#64748b", marginTop: 4 }}>选择一本书，快速导入精选句子</p>
