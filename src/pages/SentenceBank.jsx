@@ -2,6 +2,7 @@ import { useState } from "react";
 import * as XLSX from "xlsx";
 import { useSentences } from "../hooks/useSentences.js";
 import { createSentence, makeId, ensureSrs } from "../storage/sentencesStore.js";
+import { BOOKS } from "../data/books.js";
 
 export default function SentenceBank() {
   const { sentences, setSentences } = useSentences();
@@ -16,6 +17,9 @@ export default function SentenceBank() {
 
   const [backupFile, setBackupFile] = useState(null);
   const [backupResult, setBackupResult] = useState(null);
+
+  const [selectedBook, setSelectedBook] = useState(null);
+  const [bookImportResult, setBookImportResult] = useState(null);
 
   function handleAdd(e) {
     e.preventDefault();
@@ -39,6 +43,36 @@ export default function SentenceBank() {
   function handleDelete(id) {
     const next = sentences.filter((s) => s.id !== id);
     setSentences(next);
+  }
+
+  function handleBookImport() {
+    if (!selectedBook) return;
+
+    const existingTexts = new Set(sentences.map((s) => s.text));
+    const toAdd = [];
+    let skipped = 0;
+
+    for (const { text, meaning } of selectedBook.sentences) {
+      if (existingTexts.has(text)) {
+        skipped += 1;
+        continue;
+      }
+      existingTexts.add(text);
+      toAdd.push(
+        createSentence({
+          text,
+          meaning,
+          tags: [],
+        })
+      );
+    }
+
+    if (toAdd.length > 0) {
+      const next = [...toAdd, ...sentences];
+      setSentences(next);
+    }
+
+    setBookImportResult({ added: toAdd.length, skipped });
   }
 
   function handleBulkAdd() {
@@ -95,9 +129,7 @@ export default function SentenceBank() {
       if (lines.length % 2 !== 0) {
         failed.push({
           lineNumber: lines.length,
-          raw: lines[lines.length - 1] || "",
-          reason: "缺少对应中文行",
-        });
+          raw: lines[lines.length - 1] || "", reason: "缺少对应中文行" });
       }
 
       for (let i = 0; i + 1 < lines.length; i += 2) {
@@ -231,8 +263,7 @@ export default function SentenceBank() {
 
   function downloadJson(filename, data) {
     const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: "application/json",
-    });
+      type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -352,46 +383,134 @@ export default function SentenceBank() {
 
   return (
     <div>
-      <div className="card">
+      <div className='card'>
         <h2>添加句子</h2>
         <form onSubmit={handleAdd}>
           <label>英文句子</label>
           <input
-            className="input"
-            value={text}
+            className='input' value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="请输入英文句子"
           />
 
           <label>中文释义</label>
           <input
-            className="input"
-            value={meaning}
+            className='input' value={meaning}
             onChange={(e) => setMeaning(e.target.value)}
             placeholder="请输入中文释义"
           />
 
-          <button className="button" type="submit">
+          <button className='button' type='submit' >
             添加
-            <span className="paw" />
+            <span className='paw' />
           </button>
         </form>
       </div>
 
-      <div className="card">
+      <div className='card'>
+        <h2>📚 从书籍导入</h2>
+        <p style={{ color: "#64748b", marginTop: 4 }}>选择一本书，快速导入精选句子</p>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8, marginBottom: 16 }}>
+          {BOOKS.map((book) => (
+            <button
+              key={book.id}
+              type="button"
+              onClick={() => {
+                setSelectedBook(book);
+                setBookImportResult(null);
+              }}
+              style={{
+                padding: "12px",
+                background: selectedBook?.id === book.id ? "rgba(124,58,237,0.3)" : "rgba(124,58,237,0.1)",
+                border: selectedBook?.id === book.id ? "2px solid #7c3aed" : "1px solid rgba(124,58,237,0.25)",
+                borderRadius: 10,
+                color: "#fff",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+              onMouseEnter={(e) => {
+                if (selectedBook?.id !== book.id) {
+                  e.currentTarget.style.background = "rgba(124,58,237,0.15)";
+                  e.currentTarget.style.borderColor = "rgba(124,58,237,0.4)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (selectedBook?.id !== book.id) {
+                  e.currentTarget.style.background = "rgba(124,58,237,0.1)";
+                  e.currentTarget.style.borderColor = "rgba(124,58,237,0.25)";
+                }
+              }}
+            >
+              {book.title}
+            </button>
+          ))}
+        </div>
+
+        {selectedBook && (
+          <div style={{ padding: 16, background: "rgba(6,182,212,0.08)", border: "1px solid rgba(6,182,212,0.25)", borderRadius: 10, marginBottom: 12 }}>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 13, color: "#64748b", marginBottom: 4 }}>书名</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{selectedBook.title}</div>
+            </div>
+            <div style={{ marginBottom: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 13, color: "#64748b", marginBottom: 4 }}>分类</div>
+                <div style={{ fontSize: 14, color: "#06b6d4" }}>{selectedBook.category}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 13, color: "#64748b", marginBottom: 4 }}>句子数</div>
+                <div style={{ fontSize: 14, color: "#06b6d4" }}>{selectedBook.sentences.length} 条</div>
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 13, color: "#64748b", marginBottom: 4 }}>描述</div>
+              <div style={{ fontSize: 13, color: "#e2e8f0" }}>{selectedBook.description}</div>
+            </div>
+          </div>
+        )}
+
+        <button
+          className='button'
+          type='button'
+          onClick={handleBookImport}
+          disabled={!selectedBook}
+          style={{ width: "100%" }}
+        >
+          {selectedBook ? `导入 ${selectedBook.sentences.length} 条句子` : "请先选择一本书"}
+          <span className='paw' />
+        </button>
+
+        {bookImportResult && (
+          <div style={{ marginTop: 12 }}>
+            {bookImportResult.added > 0 && (
+              <div style={{ color: "#22c55e" }}>✅ 成功导入 {bookImportResult.added} 条</div>
+            )}
+            {bookImportResult.skipped > 0 && (
+              <div style={{ color: "#f97316" }}>⏭️ 跳过重复 {bookImportResult.skipped} 条</div>
+            )}
+            {bookImportResult.added === 0 && bookImportResult.skipped > 0 && (
+              <div style={{ color: "#f97316" }}>已全部导入过，无新句子</div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className='card'>
         <h2>批量添加（Tab 分隔 或 两行一组）</h2>
         <p>格式一：英文句子{"<Tab>"}中文释义（同一行）</p>
         <p>格式二：英文一行 + 中文下一行</p>
         <textarea
-          className="input"
-          rows={6}
+          className='input' rows={6}
           value={bulkText}
           onChange={(e) => setBulkText(e.target.value)}
           placeholder="There was a traffic accident in this street, but no one was harmed.\n这街上发生了交通事故，但没有人受伤。\n\nWe were friends and colleagues for more than 20 years.\n20多年来我们既是朋友又是同事。"
         />
-        <button className="button" type="button" onClick={handleBulkAdd}>
+        <button className='button' type='button' onClick={handleBulkAdd}>
           批量添加
-          <span className="paw" />
+          <span className='paw' />
         </button>
 
         {bulkResult && (
@@ -414,17 +533,15 @@ export default function SentenceBank() {
         )}
       </div>
 
-      <div className="card">
+      <div className='card'>
         <h2>从 Excel 导入（.xlsx）</h2>
         <input
-          type="file"
-          accept=".xlsx"
-          onChange={(e) => setExcelFile(e.target.files?.[0] || null)}
+          type="file" accept=".xlsx" onChange={(e) => setExcelFile(e.target.files?.[0] || null)}
         />
         <div style={{ marginTop: 8 }}>
-          <button className="button" type="button" onClick={handleExcelImport}>
+          <button className='button' type='button' onClick={handleExcelImport}>
             开始导入
-            <span className="paw" />
+            <span className='paw' />
           </button>
         </div>
 
@@ -448,36 +565,47 @@ export default function SentenceBank() {
         )}
       </div>
 
-      <div className="card">
-        <h2>备份与恢复</h2>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button className="button" type="button" onClick={handleExport}>
-            导出备份
-            <span className="paw" />
+      <div className='card'>
+        <h2 style={{ marginTop: 0 }}>💾 备份与恢复</h2>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
+          <button className='button' type='button' onClick={handleExport} style={{ padding: "10px 12px" }}>
+            📥 导出备份
           </button>
-          <input
-            type="file"
-            accept=".json"
-            onChange={(e) => setBackupFile(e.target.files?.[0] || null)}
-          />
-          <button className="button" type="button" onClick={handleImport}>
-            导入
-            <span className="paw" />
+          <label style={{ padding: "10px 12px", background: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.25)", borderRadius: 10, textAlign: "center", cursor: "pointer", transition: "all 0.3s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "rgba(124,58,237,0.2)"} onMouseLeave={(e) => e.currentTarget.style.background = "rgba(124,58,237,0.1)"}>
+            <span style={{ fontSize: 14, fontWeight: 600 }}>📂 选择文件</span>
+            <input
+              type="file" accept=".json" onChange={(e) => setBackupFile(e.target.files?.[0] || null)}
+              style={{ display: "none" }}
+            />
+          </label>
+          <button className='button' type='button' onClick={handleImport} disabled={!backupFile} style={{ padding: "10px 12px" }}>
+            📤 导入
           </button>
         </div>
 
         {backupResult && (
-          <div style={{ marginTop: 12 }}>
-            <div>新增 {backupResult.added} 条</div>
-            <div>覆盖 {backupResult.updated} 条</div>
-            <div>失败 {backupResult.failedCount} 条</div>
+          <div style={{ padding: 16, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
+              <div>
+                <div style={{ fontSize: 12, color: "#64748b", marginBottom: 4 }}>新增</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#22c55e" }}>{backupResult.added}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "#64748b", marginBottom: 4 }}>覆盖</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#f97316" }}>{backupResult.updated}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "#64748b", marginBottom: 4 }}>失败</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#ef4444" }}>{backupResult.failedCount}</div>
+              </div>
+            </div>
 
             {backupResult.failedCount > 0 && (
-              <div style={{ marginTop: 8 }}>
-                <strong>失败明细（最多前 10 条）：</strong>
+              <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(34,197,94,0.2)" }}>
+                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>失败明细（最多前 10 条）</div>
                 {backupResult.failedPreview.map((f, i) => (
-                  <div key={i} style={{ color: "#a00" }}>
-                    序号 {f.index}：{f.text || ""}（{f.reason}）
+                  <div key={i} style={{ fontSize: 12, color: "#ef4444", marginBottom: 4 }}>
+                    • 序号 {f.index}：{f.reason}
                   </div>
                 ))}
               </div>
@@ -486,30 +614,55 @@ export default function SentenceBank() {
         )}
       </div>
 
-      <div className="card">
-        <h2>句子列表</h2>
-        {sentences.length === 0 && <p>暂无句子</p>}
-        {sentences.map((s) => (
-          <div key={s.id} className="card">
-            <div>
-              <strong>英文：</strong>
-              {s.text}
-            </div>
-            <div>
-              <strong>中文：</strong>
-              {s.meaning}
-            </div>
-            {s.srs?.mastered && (
-              <div style={{ marginTop: 6, color: "#2c7a3f" }}>
-                已掌握
+      <div className='card'>
+        <h2 style={{ marginTop: 0 }}>📚 句子列表（共 {sentences.length} 条）</h2>
+        {sentences.length === 0 && (
+          <p style={{ color: "#64748b", textAlign: "center", padding: "24px 0", margin: 0 }}>
+            暂无句子，请添加开始学习
+          </p>
+        )}
+        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+          {sentences.map((s, idx) => (
+            <div
+              key={s.id}
+              style={{
+                padding: 16,
+                background: idx % 2 === 0 ? "transparent" : "rgba(124,58,237,0.03)", borderBottom: "1px solid rgba(124,58,237,0.25)", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12,
+                transition: "all 0.3s ease"}}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(124,58,237,0.08)";
+                e.currentTarget.style.borderColor = "#7c3aed";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = idx % 2 === 0 ? "transparent" : "rgba(124,58,237,0.03)";
+                e.currentTarget.style.borderColor = "rgba(124,58,237,0.25)";
+              }}
+            >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, color: "#64748b", marginBottom: 6 }}>英文</div>
+                <div style={{ fontSize: 14, color: "#fff", marginBottom: 8, fontFamily: "monospace", wordBreak: "break-word" }}>
+                  {s.text}
+                </div>
+                <div style={{ fontSize: 13, color: "#64748b", marginBottom: 4 }}>中文</div>
+                <div style={{ fontSize: 14, color: "#06b6d4" }}>
+                  {s.meaning}
+                </div>
               </div>
-            )}
-            <button className="button delete" onClick={() => handleDelete(s.id)}>
-              删除
-              <span className="paw" />
-            </button>
-          </div>
-        ))}
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end", flexShrink: 0 }}>
+                {s.srs?.mastered && (
+                  <span className='tag success'>✓ 已掌握</span>
+                )}
+                <button
+                  className='button delete' type="button" onClick={() => handleDelete(s.id)}
+                  style={{ padding: "6px 12px", fontSize: 12, width: 80 }}
+                >
+                  删除
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

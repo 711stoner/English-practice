@@ -68,8 +68,7 @@ function historyDayToStatsRow(day) {
   const pass = Number(day?.passCount || 0);
   return {
     date,
-    checkin_status: checkedIn ? "已打卡" : "未打卡",
-    new_count: Number(day?.newCount || 0),
+    checkin_status: checkedIn ? "已打卡" : "未打卡", new_count: Number(day?.newCount || 0),
     review_count: reviewed,
     pass_count: Number(day?.passCount || 0),
     fuzzy_count: Number(day?.fuzzyCount || 0),
@@ -226,43 +225,43 @@ export default function Dashboard() {
 
   return (
     <div>
-      <div className="card">
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-          <h2 style={{ margin: 0 }}>仪表盘</h2>
+      <div className='card' style={{ marginBottom: 24 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+          <h2 style={{ margin: 0 }}>📊 学习概览</h2>
           <button
-            className="button secondary"
-            type="button"
-            onClick={() => setShowRules((v) => !v)}
+            className='button secondary' type="button" onClick={() => setShowRules((v) => !v)}
+            style={{ fontSize: 13, padding: "6px 12px" }}
           >
-            {showRules ? "收起学习规则" : "学习规则说明"}
+            {showRules ? "收起" : "规则说明"}
           </button>
         </div>
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <div className="card" style={{ minWidth: 160 }}>
-            <div>总句子数</div>
-            <strong style={{ fontSize: 24 }}>{stats.total}</strong>
+
+        <div className='stat-grid'>
+          <div className='stat-item'>
+            <div className='stat-value'>{stats.total}</div>
+            <div className='stat-label'>总句子数</div>
           </div>
-          <div className="card" style={{ minWidth: 160 }}>
-            <div>今日待复习</div>
-            <strong style={{ fontSize: 24 }}>{stats.dueToday}</strong>
+          <div className='stat-item'>
+            <div className='stat-value' style={{ color: '#ef4444'}}>{stats.dueToday}</div>
+            <div className='stat-label'>今日待复习</div>
           </div>
-          <div className="card" style={{ minWidth: 160 }}>
-            <div>未来7天待复习</div>
-            <strong style={{ fontSize: 24 }}>{stats.next7Due}</strong>
+          <div className='stat-item'>
+            <div className='stat-value' style={{ color: '#f97316'}}>{stats.next7Due}</div>
+            <div className='stat-label'>7天待复习</div>
           </div>
-          <div className="card" style={{ minWidth: 160 }}>
-            <div>已进入复习</div>
-            <strong style={{ fontSize: 24 }}>{stats.learned}</strong>
+          <div className='stat-item'>
+            <div className='stat-value' style={{ color: '#06b6d4'}}>{stats.learned}</div>
+            <div className='stat-label'>已进入复习</div>
           </div>
-          <div className="card" style={{ minWidth: 160 }}>
-            <div>已掌握</div>
-            <strong style={{ fontSize: 24 }}>{stats.mastered}</strong>
+          <div className='stat-item'>
+            <div className='stat-value' style={{ color: '#22c55e'}}>{stats.mastered}</div>
+            <div className='stat-label'>已掌握</div>
           </div>
         </div>
       </div>
 
       {showRules && (
-        <div className="card">
+        <div className='card'>
           <h3>学习规则说明</h3>
           <p style={{ color: "#666", marginTop: 4 }}>
             这套规则用于帮助你更稳定地记住英文整句，下面是当前应用正在执行的核心学习逻辑。
@@ -286,88 +285,90 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="card">
-        <h3>今日学习数据</h3>
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <div className="card" style={{ minWidth: 160 }}>
-            <div>今日已复习</div>
-            <strong style={{ fontSize: 24 }}>{todayHistory.reviewedCount || 0}</strong>
+      <div className='card' style={{ marginBottom: 24 }}>
+        <h3 style={{ marginTop: 0 }}>📅 今日学习</h3>
+        <div className='stat-grid' style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))'}}>
+          <div className='stat-item'>
+            <div className='stat-value'>{todayHistory.reviewedCount || 0}</div>
+            <div className='stat-label'>已复习</div>
           </div>
-          <div className="card" style={{ minWidth: 160 }}>
-            <div>今日新学</div>
-            <strong style={{ fontSize: 24 }}>{todayHistory.newCount || 0}</strong>
+          <div className='stat-item'>
+            <div className='stat-value'>{todayHistory.newCount || 0}</div>
+            <div className='stat-label'>新学</div>
           </div>
-          <div className="card" style={{ minWidth: 160 }}>
-            <div>今日有效学习时长</div>
-            <strong style={{ fontSize: 24 }}>{formatDuration(todayHistory.durationSeconds || 0)}</strong>
+          <div className='stat-item'>
+            <div className='stat-value'>{formatDuration(todayHistory.durationSeconds || 0)}</div>
+            <div className='stat-label'>学习时长</div>
           </div>
-          <div className="card" style={{ minWidth: 160 }}>
-            <div>今日综合回忆分</div>
-            <strong style={{ fontSize: 24 }}>
-              {Math.round((todayHistory.recallScore || 0) * 100)}%
-            </strong>
+          <div className='stat-item'>
+            <div className='stat-value'>{Math.round((todayHistory.recallScore || 0) * 100)}%</div>
+            <div className='stat-label'>综合回忆分</div>
           </div>
-          <div className="card" style={{ minWidth: 160 }}>
-            <div>连续打卡天数</div>
-            <strong style={{ fontSize: 24 }}>{streakDays}</strong>
+          <div className='stat-item'>
+            <div className='stat-value' style={{ color: '#c084fc'}}>{streakDays}</div>
+            <div className='stat-label'>连续打卡</div>
           </div>
-          <div className="card" style={{ minWidth: 160 }}>
-            <div>今日打卡状态</div>
-            <strong style={{ fontSize: 24 }}>
-              {todayHistory.checkedIn ? "已打卡" : "未打卡"}
-            </strong>
+          <div className='stat-item'>
+            <div className='stat-value' style={{ color: todayHistory.checkedIn ? '#22c55e' : "#64748b" }}>
+              {todayHistory.checkedIn ? "✅ 已打卡" : "未打卡"}
+            </div>
+            <div className='stat-label'>今日状态</div>
           </div>
         </div>
       </div>
 
-      <div className="card">
-        <h3>学习情况数据</h3>
+      <div className='card'>
+        <h3 style={{ marginTop: 0 }}>📈 学习记录</h3>
         {statsLoading && <p>加载中...</p>}
-        {!statsLoading && !hasAnyStatsOrFallback && <p>暂无学习情况数据</p>}
+        {!statsLoading && !hasAnyStatsOrFallback && <p style={{ color: "#64748b" }}>暂无学习数据</p>}
 
         {!statsLoading && hasAnyStatsOrFallback && (
           <>
             {!showYearStats && !recentHasAnyRecord && (
-              <p style={{ color: "#666" }}>最近7天暂无学习记录，可查看更早历史数据</p>
+              <p style={{ color: "#64748b", fontSize: 13, marginBottom: 16 }}>最近7天暂无记录</p>
             )}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8 }}>
-              <strong>日期</strong>
-              <strong>打卡情况</strong>
-              <strong>新学句子数</strong>
-              <strong>复习句子数</strong>
-              {visibleStats.map((row) => {
-                const rowDate = normalizeStatsDate(row.date);
-                const isTodayRow = rowDate === todayStatsDate;
-                const checkinStatus = isTodayRow
-                  ? todayHistory.checkedIn
-                    ? "已打卡"
-                    : "未打卡"
-                  : row.checkin_status || "未打卡";
-                const newCount = isTodayRow ? todayHistory.newCount || 0 : row.new_count || 0;
-                const reviewCount = isTodayRow
-                  ? todayHistory.reviewedCount || 0
-                  : row.review_count || 0;
+            <table style={{ overflow: "auto" }}>
+              <thead>
+                <tr>
+                  <th>日期</th>
+                  <th>打卡</th>
+                  <th>新学</th>
+                  <th>复习</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visibleStats.map((row) => {
+                  const rowDate = normalizeStatsDate(row.date);
+                  const isTodayRow = rowDate === todayStatsDate;
+                  const checkinStatus = isTodayRow
+                    ? todayHistory.checkedIn
+                      ? "✅ 已打卡"
+                      : "未打卡"
+                    : row.checkin_status === "已打卡" ? "✅ 已打卡" : "未打卡";
+                  const newCount = isTodayRow ? todayHistory.newCount || 0 : row.new_count || 0;
+                  const reviewCount = isTodayRow
+                    ? todayHistory.reviewedCount || 0
+                    : row.review_count || 0;
 
-                return (
-                  <div key={row.date} style={{ display: "contents" }}>
-                    <div>{rowDate}</div>
-                    <div>{checkinStatus}</div>
-                    <div>{newCount}</div>
-                    <div>{reviewCount}</div>
-                  </div>
-                );
-              })}
-            </div>
+                  return (
+                    <tr key={row.date}>
+                      <td>{rowDate}</td>
+                      <td>{checkinStatus}</td>
+                      <td>{newCount}</td>
+                      <td>{reviewCount}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
 
             {olderHistoryRows.length > 0 && (
-              <div style={{ marginTop: 12 }}>
+              <div style={{ marginTop: 16 }}>
                 <button
-                  className="button"
-                  type="button"
-                  onClick={() => setShowYearStats((v) => !v)}
+                  className='button secondary' type="button" onClick={() => setShowYearStats((v) => !v)}
+                  style={{ width: "100%" }}
                 >
-                  {showYearStats ? "收起" : "查看最近一年记录"}
-                  <span className="paw" />
+                  {showYearStats ? "收起" : "查看历史记录"}
                 </button>
               </div>
             )}
@@ -375,20 +376,32 @@ export default function Dashboard() {
         )}
       </div>
 
-      <div className="card">
-        <h3>今日待复习（最多{REVIEW_LIST_LIMIT}条）</h3>
-        {dueList.length === 0 && <p>今日暂无待复习内容</p>}
-        {dueList.map((s) => (
-          <div key={s.id} className="card">
-            <div style={{ fontWeight: 600 }}>{s.meaning}</div>
-            <div style={{ marginTop: 6, color: "#666", fontSize: 13 }}>
-              状态：{getReviewStatusLabel(s.srs)}
+      <div className='card'>
+        <h3 style={{ marginTop: 0 }}>⏰ 今日待复习</h3>
+        {dueList.length === 0 && (
+          <p style={{ color: "#64748b", textAlign: "center", padding: "20px 0", margin: 0 }}>
+            今日没有待复习的内容
+          </p>
+        )}
+        {dueList.map((s, idx) => (
+          <div
+            key={s.id}
+            style={{
+              padding: 12,
+              background: idx % 2 === 0 ? "transparent" : "rgba(124,58,237,0.03)", borderBottom: "1px solid rgba(124,58,237,0.25)", display: "flex", justifyContent: "space-between", alignItems: "center"}}
+          >
+            <div>
+              <div style={{ fontWeight: 600, color: "#fff" }}>{s.meaning}</div>
+              <div style={{ marginTop: 4, fontSize: 12, color: "#64748b" }}>
+                {getReviewStatusLabel(s.srs)}
+              </div>
             </div>
+            {idx < 3 && <span style={{ fontSize: 20 }}>🔥</span>}
           </div>
         ))}
         {dueTotalCount > dueList.length && (
-          <div style={{ marginTop: 8, color: "#666", fontSize: 13 }}>
-            还有 {dueTotalCount - dueList.length} 条待复习
+          <div style={{ marginTop: 12, padding: 12, background: "rgba(6,182,212,0.1)", color: "#06b6d4", fontSize: 13, borderRadius: 8, textAlign: "center" }}>
+            还有 <strong>{dueTotalCount - dueList.length}</strong> 条待复习
           </div>
         )}
       </div>

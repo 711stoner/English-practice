@@ -118,6 +118,7 @@ export default function Practice() {
   const [completedCount, setCompletedCount] = useState(0);
   const [isRandomMode, setIsRandomMode] = useState(false);
   const [randomId, setRandomId] = useState(null);
+  const [practiceMode, setPracticeMode] = useState('dictation');
 
   const [input, setInput] = useState("");
   const [inputError, setInputError] = useState("");
@@ -187,8 +188,7 @@ export default function Practice() {
       pass: 0,
       fuzzy: 0,
       fail: 0,
-      lastResult: "",
-      updatedAt: 0,
+      lastResult: "", updatedAt: 0,
     };
     const next = {
       ...base,
@@ -509,7 +509,7 @@ export default function Practice() {
 
   if (sentences.length === 0) {
     return (
-      <div className="card">
+      <div className='card'>
         <h2>今日默写练习</h2>
         <p>句仓为空，请先添加句子</p>
       </div>
@@ -535,11 +535,11 @@ export default function Practice() {
     }
 
     return (
-      <div className="card">
+      <div className='card'>
         <h2>今日默写练习</h2>
         <p>{hasReviewedInRound ? "今日练习已完成，本轮结果如下：" : "今日暂无待练习句子"}</p>
 
-        <div className="card" style={{ marginTop: 12 }}>
+        <div className='card' style={{ marginTop: 12 }}>
           <div style={{ fontWeight: 700 }}>今日练习上限：{planInfo.maxDailyLoad || DAILY_MAX_LOAD} 句</div>
           <div style={{ marginTop: 6, color: "#666" }}>
             今日安排：复习 {planInfo.reviewPlanned || 0} 句，新学 {planInfo.newPlanned || 0} 句
@@ -557,7 +557,7 @@ export default function Practice() {
         </div>
 
         {hasReviewedInRound && (
-          <div className="card" style={{ marginTop: 12 }}>
+          <div className='card' style={{ marginTop: 12 }}>
             <div>
               <strong>本轮复习：{judgedSession.reviewed_count} 句</strong>
             </div>
@@ -577,9 +577,7 @@ export default function Practice() {
 
             <div style={{ marginTop: 10 }}>
               <button
-                className="button"
-                type="button"
-                onClick={handleSessionCheckin}
+                className='button' type="button" onClick={handleSessionCheckin}
                 disabled={!canCheckin}
               >
                 {checkedInToday
@@ -587,7 +585,7 @@ export default function Practice() {
                   : canCheckin
                     ? "今日打卡"
                     : "继续巩固后打卡"}
-                <span className="paw" />
+                <span className='paw' />
               </button>
             </div>
 
@@ -599,9 +597,7 @@ export default function Practice() {
             {!judgedSession.passed && (
               <div style={{ marginTop: 10 }}>
                 <button
-                  className="button secondary"
-                  type="button"
-                  onClick={continueCheckinRecovery}
+                  className='button secondary' type="button" onClick={continueCheckinRecovery}
                 >
                   继续巩固到达标（计入本轮）
                 </button>
@@ -615,9 +611,9 @@ export default function Practice() {
 
         {(judgedSession.passed || checkedInToday) && (
           <div style={{ marginTop: 12 }}>
-            <button className="button" type="button" onClick={enterRandomMode}>
+            <button className='button' type='button' onClick={enterRandomMode}>
               随机练习一句（不计入今日队列）
-              <span className="paw" />
+              <span className='paw' />
             </button>
           </div>
         )}
@@ -627,7 +623,7 @@ export default function Practice() {
 
   if (!current) {
     return (
-      <div className="card">
+      <div className='card'>
         <h2>今日默写练习</h2>
         <p>没有可练习的句子</p>
       </div>
@@ -875,8 +871,7 @@ export default function Practice() {
 
       const updatedSrs = {
         ...base,
-        algorithm: "fsrs",
-        fsrs: updatedCard,
+        algorithm: "fsrs", fsrs: updatedCard,
         dueAt: getFsrsDueAt(updatedCard),
         intervalDays,
         reps,
@@ -938,190 +933,205 @@ export default function Practice() {
   }
 
   return (
-    <div className="card">
-      <h2>今日默写练习</h2>
-
-      {!isRandomMode && (
-        <div className="card" style={{ marginBottom: 12 }}>
-          <div style={{ fontWeight: 700 }}>{progressHint}</div>
-          <div style={{ marginTop: 6, color: "#666", fontSize: 13 }}>
-            今日练习上限：{planInfo.maxDailyLoad || DAILY_MAX_LOAD} 句（复习优先）
-          </div>
-          <div style={{ marginTop: 4, color: "#666", fontSize: 13 }}>
-            今日已安排：复习 {planInfo.reviewPlanned || 0} 句，新学 {planInfo.newPlanned || 0} 句
-          </div>
-          {(planInfo.deferredNewCount || 0) > 0 && (
-            <div style={{ marginTop: 4, color: "#666", fontSize: 12 }}>
-              今日新增 {planInfo.deferredNewCount} 句，明天起进入新学池
-            </div>
-          )}
-          {(planInfo.protectionReasons || []).length > 0 && (
-            <div style={{ marginTop: 4, color: "#666", fontSize: 12 }}>
-              自动控量：{planInfo.protectionReasons.join("、")}
-            </div>
-          )}
-          <div style={{ marginTop: 4, color: "#666", fontSize: 12 }}>
-            复合曲线：FSRS长期调度 + 同日强化 + 1/3/7/15天早期巩固
-          </div>
-          <div style={{ marginTop: 4, color: "#666", fontSize: 12 }}>
-            同日强化回看：{sessionReinforcementCount}/{MAX_SESSION_REINFORCEMENTS}
-          </div>
-          {judgedSession.reviewed_count > 0 && (
-            <div style={{ marginTop: 4, color: "#666", fontSize: 12 }}>
-              当前综合回忆分：{Math.round(judgedSession.recall_score * 100)}%
-            </div>
-          )}
-          <div style={{ marginTop: 4, color: "#666", fontSize: 12 }}>
-            打卡线：{sessionTargetHint}
-          </div>
-        </div>
-      )}
-
+    <div>
       {!isRandomMode && queueIds.length > 0 && (
-        <div style={{ marginBottom: 12 }}>
-          <button className="button secondary" type="button" onClick={rebuildQueueFromStorage}>
-            重新安排今日练习
-          </button>
+        <div className='card' style={{ marginBottom: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <h2 style={{ margin: 0 }}>今日练习</h2>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                className={`button ${practiceMode === 'dictation' ? '' : 'secondary'}`}
+                type="button" onClick={() => setPracticeMode('dictation')}
+                style={{ padding: "6px 16px", fontSize: 13 }}
+              >
+                默写
+              </button>
+              <button
+                className={`button ${practiceMode === 'listening' ? '' : 'secondary'}`}
+                type="button" onClick={() => setPracticeMode('listening')}
+                style={{ padding: "6px 16px", fontSize: 13 }}
+              >
+                听写
+              </button>
+            </div>
+          </div>
+
+          <div className='progress-bar'>
+            <div
+              className='progress-bar-fill' style={{ width: `${plannedCount > 0 ? (completedCount / plannedCount) * 100 : 0}%` }}
+            />
+          </div>
+          <div style={{ fontSize: 13, color: "#64748b", marginTop: 8 }}>
+            {progressHint}
+          </div>
         </div>
       )}
+
 
       {isRandomMode && (
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ marginBottom: 8, color: "#666" }}>当前模式：随机练习（不影响今日计划）</div>
-          <button className="button secondary" type="button" onClick={exitRandomMode}>
+        <div className='card' style={{ marginBottom: 16, textAlign: 'center' }}>
+          <div style={{ color: "#64748b", fontSize: 14, marginBottom: 12 }}>
+            🎲 随机练习模式（不影响今日计划）
+          </div>
+          <button className='button secondary' type='button' onClick={exitRandomMode}>
             返回今日练习
           </button>
         </div>
       )}
 
-      <div style={{ marginBottom: 12 }}>
-        <strong>中文提示：</strong>
-        {current.meaning}
-        {!isRandomMode && (
-          <div style={{ marginTop: 6, color: "#666", fontSize: 12 }}>
-            当前确认强度：{currentConfirmPolicy.label}
-          </div>
-        )}
-        {!isRandomMode && currentConfirmPolicy.requireSecondConfirm && (
-          <div style={{ marginTop: 4, color: "#666", fontSize: 12 }}>
-            严格确认只要求内容正确；标点、空格、大小写错误只提醒，不拦截。
-          </div>
-        )}
-      </div>
-
-      <details style={{ marginBottom: 10, color: "#666", fontSize: 12 }}>
-        <summary>朗读功能说明（可选）</summary>
-        <div style={{ marginTop: 6 }}>
-          Chrome 下朗读功能可能不稳定，遇到卡顿可暂时关闭朗读。
+      {!isRandomMode && !current && (
+        <div className='card' style={{ textAlign: 'center' }}>
+          <h3>没有可练习的句子</h3>
+          <p style={{ margin: 0 }}>今日任务已完成！</p>
         </div>
-      </details>
+      )}
 
-      <form onSubmit={handleSubmit}>
-        <label>请默写完整英文句子</label>
-        <textarea
-          ref={inputRef}
-          className="input"
-          rows={4}
-          value={input}
-          onChange={(e) => {
-            setInput(e.target.value);
-            if (inputError) setInputError("");
-          }}
-          onKeyDown={handleInputKeyDown}
-          disabled={submitted}
-          placeholder="在这里输入你默写的句子"
-        />
-
-        {inputError && (
-          <div style={{ marginTop: -6, marginBottom: 10, color: "#b42318", fontSize: 13 }}>
-            {inputError}
-          </div>
-        )}
-
-        {!submitted && (
-          <>
-            <div style={{ marginTop: 8 }}>
-              <button className="button" type="submit">
-                提交答案
-                <span className="paw" />
-              </button>
+      {current && (
+        <div className='card' style={{ marginBottom: 16 }}>
+          {practiceMode === 'dictation' && (
+            <div style={{ marginBottom: 20, padding: "16px", background: "rgba(124,58,237,0.1)", borderRadius: 12, border: "1px solid rgba(124,58,237,0.25)" }}>
+              <div style={{ fontSize: 13, color: "#64748b", marginBottom: 8 }}>中文提示</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: "#fff" }}>
+                {current.meaning}
+              </div>
             </div>
-            <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button
-                className="button secondary"
-                type="button"
-                onClick={handleShowHint}
-              >
-                查看提示
-              </button>
-              <button className="button secondary" type="button" onClick={handleSpeak}>
-                朗读
-              </button>
-              <button className="button secondary" type="button" onClick={handleNext}>
-                不会这句
-              </button>
+          )}
+
+          {practiceMode === 'listening' && (
+            <div style={{ marginBottom: 16, padding: "12px", background: "rgba(6,182,212,0.1)", borderRadius: 10, border: "1px solid rgba(6,182,212,0.25)" }}>
+              <div style={{ fontSize: 12, color: "#06b6d4" }}>
+                🎧 听写模式：点击朗读按钮，然后输入听到的句子
+              </div>
             </div>
-            <div style={{ marginTop: 8, color: "#666", fontSize: 12 }}>
-              快捷键：Ctrl/Cmd + Enter 提交，Esc 收起提示
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <label style={{ display: "block", marginBottom: 8, fontSize: 13, color: "#64748b" }}>
+              请输入完整英文句子
+            </label>
+            <textarea
+              ref={inputRef}
+              className='input' rows={5}
+              value={input}
+              onChange={(e) => {
+                setInput(e.target.value);
+                if (inputError) setInputError("");
+              }}
+              onKeyDown={handleInputKeyDown}
+              disabled={submitted}
+              placeholder="在这里输入..." style={{ fontSize: 15, minHeight: 120 }}
+            />
+
+            {inputError && (
+              <div style={{ marginTop: 8, padding: 12, background: "rgba(239,68,68,0.1)", color: "#ef4444", fontSize: 13, borderRadius: 8, border: "1px solid rgba(239,68,68,0.2)" }}>
+                ⚠️ {inputError}
+              </div>
+            )}
+
+            {!submitted && (
+              <div style={{ marginTop: 16 }}>
+                <button className='button' type='submit' style={{ width: "100%", padding: "12px 20px", fontSize: 16 }}>
+                  提交答案
+                </button>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 12 }}>
+                  <button
+                    className='button secondary' type="button" onClick={handleShowHint}
+                    style={{ padding: "10px 12px", fontSize: 13 }}
+                  >
+                    💡 提示
+                  </button>
+                  <button className='button secondary' type='button' onClick={handleSpeak} style={{ padding: "10px 12px", fontSize: 13 }}>
+                    🎵 朗读
+                  </button>
+                  <button className='button secondary' type='button' onClick={handleNext} style={{ padding: "10px 12px", fontSize: 13 }}>
+                    ⏭️ 跳过
+                  </button>
+                </div>
+
+                <div style={{ marginTop: 10, fontSize: 12, color: "#64748b", textAlign: "center" }}>
+                  Ctrl/Cmd + Enter 快速提交
+                </div>
+              </div>
+            )}
+          </form>
+
+          {actionMessage && (
+            <div style={{ marginTop: 12, padding: 10, background: 'rgba(124,58,237,0.1)', color: '#06b6d4', fontSize: 13, borderRadius: 8 }}>
+              {actionMessage}
             </div>
-          </>
-        )}
-      </form>
+          )}
 
-      {actionMessage && <div style={{ marginTop: 8, color: "#666" }}>{actionMessage}</div>}
+          {answerMessage && (
+            <div style={{ marginTop: 12, padding: 12, background: 'rgba(34,197,94,0.1)', color: '#22c55e', fontSize: 14, borderRadius: 8, border: '1px solid rgba(34,197,94,0.2)' }}>
+              {answerMessage}
+            </div>
+          )}
 
-      {answerMessage && (
-        <div style={{ marginTop: 8, color: "#333", whiteSpace: "pre-line" }}>
-          {answerMessage}
+          {showHint && !submitted && (
+            <div style={{ marginTop: 12, padding: 12, background: 'rgba(124,58,237,0.1)', borderRadius: 8, border: '1px solid rgba(124,58,237,0.25)' }}>
+              <div style={{ fontSize: 12, color: '#64748b', marginBottom: 6 }}>💡 提示</div>
+              <div style={{ fontSize: 14, color: '#fff' }}>
+                {practiceMode === 'listening' ? current.meaning : current.text}
+              </div>
+            </div>
+          )}
+
+          {confirmPrompt && (
+            <div style={{ marginTop: 10, padding: 10, background: 'rgba(6,182,212,0.1)', color: '#06b6d4', fontSize: 12, borderRadius: 8, border: '1px solid rgba(6,182,212,0.25)' }}>
+              {confirmPrompt}
+            </div>
+          )}
+
+          {formattingHints.length > 0 && (
+            <div style={{ marginTop: 10, padding: 10, background: 'rgba(249,115,22,0.1)', color: '#f97316', fontSize: 12, borderRadius: 8 }}>
+              ℹ️ {formattingHints.join('、')}
+            </div>
+          )}
+
+          {!submitted &&
+            (currentSentencePolicy.usedHint ||
+              currentSentencePolicy.usedSkip ||
+              currentSentencePolicy.usedTts ||
+              currentSentencePolicy.forceHardCap) && (
+              <div style={{ marginTop: 10, padding: 10, background: 'rgba(249,115,22,0.1)', color: '#f97316', fontSize: 12, borderRadius: 8 }}>
+                ⚠️ 本轮已使用辅助，本句最高按”模糊”记录
+              </div>
+            )}
         </div>
       )}
-      {formattingHints.length > 0 && (
-        <div style={{ marginTop: 6, color: "#666", fontSize: 13 }}>
-          小提醒：这句内容已经对了，格式可再规范一些（{formattingHints.join("；")}）
-        </div>
-      )}
-      {confirmPrompt && (
-        <div style={{ marginTop: 6, color: "#666", fontSize: 13 }}>{confirmPrompt}</div>
-      )}
 
-      {showHint && !submitted && <div style={{ marginTop: 8, color: "#333" }}>提示：{current.text}</div>}
-
-      {!submitted &&
-        (currentSentencePolicy.usedHint ||
-          currentSentencePolicy.usedSkip ||
-          currentSentencePolicy.usedTts ||
-          currentSentencePolicy.forceHardCap) && (
-          <div style={{ marginTop: 8, color: "#666", fontSize: 12 }}>
-            本轮已使用辅助（提示/朗读/跳过），本句最高按“模糊”记录
+      {submitted && current && (
+        <div className='card'>
+          <div style={{ padding: 16, background: result ? 'rgba(34,197,94,0.1)' : 'rgba(249,115,22,0.1)', borderRadius: 12, marginBottom: 16, border: result ? '1px solid rgba(34,197,94,0.2)' : '1px solid rgba(249,115,22,0.2)' }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: result ? '#22c55e' : '#f97316', marginBottom: 8 }}>
+              {result ? '✅ 内容正确' : '❌ 还差一点'}
+            </div>
+            <div style={{ fontSize: 16, color: '#fff', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+              {current.text}
+            </div>
+            {result && fuzzyNotice && (
+              <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>
+                📝 {fuzzyNotice}
+              </div>
+            )}
           </div>
-        )}
 
-      {submitted && (
-        <div style={{ marginTop: 12 }}>
-          <div>{result ? "✅ 内容正确" : "还差一点，建议再试一次"}</div>
-          <div>正确答案：{current.text}</div>
-          {result && fuzzyNotice && <div style={{ marginTop: 6, color: "#c66" }}>{fuzzyNotice}</div>}
+          <div style={{ marginBottom: 12, fontSize: 13, color: '#64748b', textAlign: 'center' }}>
+            请选择掌握程度
+          </div>
 
-          <div style={{ marginTop: 8, color: "#666" }}>请选择掌握程度，系统会自动进入下一句</div>
-
-          <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button className="button" type="button" onClick={() => handleRate(4)}>
-              会（记住了）
-              <span className="paw" />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+            <button className='button' type='button' onClick={() => handleRate(4)} style={{ padding: '14px 12px', fontSize: 14 }}>
+              🟢 会<br /><span style={{ fontSize: 11 }}>完全掌握</span>
             </button>
-            <button className="button secondary" type="button" onClick={() => handleRate(3)}>
-              模糊（有点难）
+            <button className='button secondary' type='button' onClick={() => handleRate(3)} style={{ padding: '14px 12px', fontSize: 14 }}>
+              🟡 模糊<br /><span style={{ fontSize: 11 }}>有点难</span>
             </button>
-            <button className="button secondary" type="button" onClick={() => handleRate(1)}>
-              不会（忘了）
+            <button className='button secondary' type='button' onClick={() => handleRate(1)} style={{ padding: '14px 12px', fontSize: 14 }}>
+              🔴 不会<br /><span style={{ fontSize: 11 }}>需复习</span>
             </button>
           </div>
-        </div>
-      )}
-
-      {!isRandomMode && (
-        <div style={{ marginTop: 12, color: "#666", fontSize: 12 }}>
-          学习说明：系统会优先安排待复习句子，再按负荷动态补充新学；当日新增句子从次日才进入新学池，并用复合记忆曲线控制早期间隔。
         </div>
       )}
     </div>

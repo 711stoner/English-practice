@@ -1,6 +1,22 @@
 {
   "version": 1,
-  "records": [],
+  "records": [
+    {
+      "date": "260517",
+      "checked_in": false,
+      "checkin_status": "未打卡",
+      "new_count": 2,
+      "review_count": 0,
+      "study_seconds": 1,
+      "pass_count": 0,
+      "fuzzy_count": 0,
+      "fail_count": 0,
+      "pass_rate": 0,
+      "recall_score": 0,
+      "created_at": "2026-05-17T09:02:43.935Z",
+      "updated_at": "2026-05-17T10:59:41.739Z"
+    }
+  ],
   "created_at": "2026-03-16T00:11:07Z",
-  "updated_at": "2026-03-16T00:11:07Z"
+  "updated_at": "2026-05-17T10:59:41.739Z"
 }
