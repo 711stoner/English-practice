@@ -6,6 +6,8 @@ import { BOOKS } from "../data/books.js";
 
 export default function SentenceBank() {
   const { sentences, setSentences } = useSentences();
+  const [addMode, setAddMode] = useState("bulk");
+
   const [bulkText, setBulkText] = useState("");
   const [bulkResult, setBulkResult] = useState(null);
 
@@ -453,69 +455,137 @@ export default function SentenceBank() {
       </div>
 
       <div className='card'>
-        <h2>批量添加（Tab 分隔 或 两行一组）</h2>
-        <p>格式一：英文句子{"<Tab>"}中文释义（同一行）</p>
-        <p>格式二：英文一行 + 中文下一行</p>
-        <textarea
-          className='input' rows={6}
-          value={bulkText}
-          onChange={(e) => setBulkText(e.target.value)}
-          placeholder="There was a traffic accident in this street, but no one was harmed.\n这街上发生了交通事故，但没有人受伤。\n\nWe were friends and colleagues for more than 20 years.\n20多年来我们既是朋友又是同事。"
-        />
-        <button className='button' type='button' onClick={handleBulkAdd}>
-          批量添加
-          <span className='paw' />
-        </button>
+        <h2>✏️ 自行添加</h2>
+        <p style={{ color: "#64748b", marginTop: 4 }}>选择添加方式</p>
 
-        {bulkResult && (
-          <div style={{ marginTop: 12 }}>
-            <div>成功添加 {bulkResult.added} 条</div>
-            <div>跳过重复 {bulkResult.skipped} 条</div>
-            <div>失败 {bulkResult.failedCount} 行</div>
-
-            {bulkResult.failedCount > 0 && (
-              <div style={{ marginTop: 8 }}>
-                <strong>失败明细（最多前 10 行）：</strong>
-                {bulkResult.failedPreview.map((f, i) => (
-                  <div key={i} style={{ color: "#a00" }}>
-                    行号 {f.lineNumber}：{f.raw}（{f.reason}）
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className='card'>
-        <h2>从 Excel 导入（.xlsx）</h2>
-        <input
-          type="file" accept=".xlsx" onChange={(e) => setExcelFile(e.target.files?.[0] || null)}
-        />
-        <div style={{ marginTop: 8 }}>
-          <button className='button' type='button' onClick={handleExcelImport}>
-            开始导入
-            <span className='paw' />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8, marginBottom: 16 }}>
+          <button
+            type="button"
+            onClick={() => setAddMode("bulk")}
+            style={{
+              padding: "12px",
+              background: addMode === "bulk" ? "rgba(124,58,237,0.3)" : "rgba(124,58,237,0.1)",
+              border: addMode === "bulk" ? "2px solid #7c3aed" : "1px solid rgba(124,58,237,0.25)",
+              borderRadius: 10,
+              color: "#fff",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              fontSize: 13,
+              fontWeight: 600,
+            }}
+            onMouseEnter={(e) => {
+              if (addMode !== "bulk") {
+                e.currentTarget.style.background = "rgba(124,58,237,0.15)";
+                e.currentTarget.style.borderColor = "rgba(124,58,237,0.4)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (addMode !== "bulk") {
+                e.currentTarget.style.background = "rgba(124,58,237,0.1)";
+                e.currentTarget.style.borderColor = "rgba(124,58,237,0.25)";
+              }
+            }}
+          >
+            文本粘贴
+          </button>
+          <button
+            type="button"
+            onClick={() => setAddMode("excel")}
+            style={{
+              padding: "12px",
+              background: addMode === "excel" ? "rgba(124,58,237,0.3)" : "rgba(124,58,237,0.1)",
+              border: addMode === "excel" ? "2px solid #7c3aed" : "1px solid rgba(124,58,237,0.25)",
+              borderRadius: 10,
+              color: "#fff",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              fontSize: 13,
+              fontWeight: 600,
+            }}
+            onMouseEnter={(e) => {
+              if (addMode !== "excel") {
+                e.currentTarget.style.background = "rgba(124,58,237,0.15)";
+                e.currentTarget.style.borderColor = "rgba(124,58,237,0.4)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (addMode !== "excel") {
+                e.currentTarget.style.background = "rgba(124,58,237,0.1)";
+                e.currentTarget.style.borderColor = "rgba(124,58,237,0.25)";
+              }
+            }}
+          >
+            Excel 导入
           </button>
         </div>
 
-        {excelResult && (
-          <div style={{ marginTop: 12 }}>
-            <div>成功添加 {excelResult.added} 条</div>
-            <div>跳过重复 {excelResult.skipped} 条</div>
-            <div>失败 {excelResult.failedCount} 行</div>
+        {addMode === "bulk" && (
+          <>
+            <p style={{ color: "#64748b", marginTop: 12, marginBottom: 8 }}>格式一：英文句子{"<Tab>"}中文释义（同一行）</p>
+            <p style={{ color: "#64748b", marginBottom: 12 }}>格式二：英文一行 + 中文下一行</p>
+            <textarea
+              className='input' rows={6}
+              value={bulkText}
+              onChange={(e) => setBulkText(e.target.value)}
+              placeholder="There was a traffic accident in this street, but no one was harmed.\n这街上发生了交通事故，但没有人受伤。\n\nWe were friends and colleagues for more than 20 years.\n20多年来我们既是朋友又是同事。"
+            />
+            <button className='button' type='button' onClick={handleBulkAdd} style={{ width: "100%", marginTop: 12 }}>
+              添加
+              <span className='paw' />
+            </button>
 
-            {excelResult.failedCount > 0 && (
-              <div style={{ marginTop: 8 }}>
-                <strong>失败明细（最多前 10 行）：</strong>
-                {excelResult.failedPreview.map((f, i) => (
-                  <div key={i} style={{ color: "#a00" }}>
-                    行号 {f.lineNumber}：{f.text} / {f.meaning}（{f.reason}）
+            {bulkResult && (
+              <div style={{ marginTop: 12 }}>
+                <div>成功添加 {bulkResult.added} 条</div>
+                <div>跳过重复 {bulkResult.skipped} 条</div>
+                <div>失败 {bulkResult.failedCount} 行</div>
+
+                {bulkResult.failedCount > 0 && (
+                  <div style={{ marginTop: 8 }}>
+                    <strong>失败明细（最多前 10 行）：</strong>
+                    {bulkResult.failedPreview.map((f, i) => (
+                      <div key={i} style={{ color: "#a00" }}>
+                        行号 {f.lineNumber}：{f.raw}（{f.reason}）
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
             )}
-          </div>
+          </>
+        )}
+
+        {addMode === "excel" && (
+          <>
+            <input
+              type="file" accept=".xlsx" onChange={(e) => setExcelFile(e.target.files?.[0] || null)}
+            />
+            <div style={{ marginTop: 12 }}>
+              <button className='button' type='button' onClick={handleExcelImport} style={{ width: "100%" }}>
+                导入
+                <span className='paw' />
+              </button>
+            </div>
+
+            {excelResult && (
+              <div style={{ marginTop: 12 }}>
+                <div>成功添加 {excelResult.added} 条</div>
+                <div>跳过重复 {excelResult.skipped} 条</div>
+                <div>失败 {excelResult.failedCount} 行</div>
+
+                {excelResult.failedCount > 0 && (
+                  <div style={{ marginTop: 8 }}>
+                    <strong>失败明细（最多前 10 行）：</strong>
+                    {excelResult.failedPreview.map((f, i) => (
+                      <div key={i} style={{ color: "#a00" }}>
+                        行号 {f.lineNumber}：{f.text} / {f.meaning}（{f.reason}）
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
 
