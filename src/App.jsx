@@ -94,14 +94,54 @@ export default function App() {
 
   function handleAuthClick() {
     if (user) {
-      const shouldLogout = window.confirm(`确认退出登录吗？\n当前账号：${user.name}`);
-      if (shouldLogout) {
-        logout();
+      const action = window.prompt(`当前账号：${user.name}\n\n1 = 修改密码\n2 = 退出登录`);
+      if (!action) return;
+
+      if (action === "1") {
+        const oldPassword = window.prompt("请输入旧密码");
+        if (!oldPassword) return;
+        const newPassword = window.prompt("请输入新密码");
+        if (!newPassword) return;
+        const confirmPassword = window.prompt("请确认新密码");
+        if (confirmPassword !== newPassword) {
+          alert("两次密码不一致");
+          return;
+        }
+
+        fetch("/api/user-data/reset-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: user.id,
+            oldPassword,
+            newPassword,
+          }),
+        })
+          .then((res) => {
+            if (res.status === 401) throw new Error("旧密码错误");
+            if (res.status === 404) throw new Error("用户不存在");
+            if (!res.ok) throw new Error("修改失败");
+            return res.json();
+          })
+          .then(() => {
+            alert("密码修改成功！");
+          })
+          .catch((err) => {
+            alert("修改失败: " + err.message);
+          });
+        return;
       }
+
+      if (action === "2") {
+        logout();
+        return;
+      }
+
+      alert("请输入 1 或 2");
       return;
     }
 
-    const mode = window.prompt("请选择：\n1 = 注册\n2 = 登陆");
+    const mode = window.prompt("请选择：\n1 = 注册\n2 = 登陆\n3 = 重置密码");
     if (!mode) return;
 
     if (mode === "1") {
@@ -147,7 +187,44 @@ export default function App() {
       return;
     }
 
-    alert("请输入 1 或 2");
+    if (mode === "3") {
+      const userName = window.prompt("请输入你的用户名");
+      if (!userName) return;
+      const oldPassword = window.prompt("请输入旧密码（用于验证身份）");
+      if (!oldPassword) return;
+      const newPassword = window.prompt("请输入新密码");
+      if (!newPassword) return;
+      const confirmPassword = window.prompt("请确认新密码");
+      if (confirmPassword !== newPassword) {
+        alert("两次密码不一致");
+        return;
+      }
+
+      fetch("/api/user-data/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: userName.toLowerCase().trim(),
+          oldPassword,
+          newPassword,
+        }),
+      })
+        .then((res) => {
+          if (res.status === 401) throw new Error("旧密码错误");
+          if (res.status === 404) throw new Error("用户不存在");
+          if (!res.ok) throw new Error("重置失败");
+          return res.json();
+        })
+        .then(() => {
+          alert("密码重置成功！请用新密码登陆");
+        })
+        .catch((err) => {
+          alert("重置失败: " + err.message);
+        });
+      return;
+    }
+
+    alert("请输入 1、2 或 3");
   }
 
   async function handleManualSync() {

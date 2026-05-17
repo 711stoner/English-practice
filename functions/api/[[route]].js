@@ -184,6 +184,49 @@ export async function onRequest(context) {
     }
   }
 
+  // 重置密码
+  if (pathname === '/api/user-data/reset-password') {
+    if (request.method === 'POST') {
+      const body = await request.json();
+      const { userId, oldPassword, newPassword } = body;
+
+      if (!userId || !oldPassword || !newPassword) {
+        return new Response(JSON.stringify({ error: 'Missing userId, oldPassword or newPassword' }), {
+          status: 400,
+          headers,
+        });
+      }
+
+      const existingData = await env.STORE.get(`user_${userId}`);
+      const existing = existingData ? JSON.parse(existingData) : null;
+
+      if (!existing) {
+        return new Response(JSON.stringify({ error: 'User not found' }), {
+          status: 404,
+          headers,
+        });
+      }
+
+      const oldPasswordHash = hashPassword(oldPassword);
+      if (existing.password_hash !== oldPasswordHash) {
+        return new Response(JSON.stringify({ error: 'Old password incorrect' }), {
+          status: 401,
+          headers,
+        });
+      }
+
+      existing.password_hash = hashPassword(newPassword);
+      existing.updated_at = new Date().toISOString();
+      await env.STORE.put(`user_${userId}`, JSON.stringify(existing));
+
+      return new Response(JSON.stringify({
+        ok: true,
+        userId,
+        message: 'Password reset successfully',
+      }), { status: 200, headers });
+    }
+  }
+
   if (pathname === '/api/user-data/sync') {
     if (request.method === 'POST') {
       const body = await request.json();
