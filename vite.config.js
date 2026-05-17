@@ -529,7 +529,7 @@ function createUserDataApiPlugin() {
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: "/English-practice/",
+  base: "/",
   plugins: [react(), createLearningStatsApiPlugin(), createUserDataApiPlugin()],
   preview: {
     host: "0.0.0.0",
