@@ -101,11 +101,53 @@ export default function App() {
       return;
     }
 
-    const inputName = window.prompt("请输入登录名");
-    if (!inputName) return;
-    const inputPassword = window.prompt("请输入登录密码");
-    if (!inputPassword) return;
-    loginWithCredentials(inputName, inputPassword);
+    const mode = window.prompt("请选择：\n1 = 注册\n2 = 登陆");
+    if (!mode) return;
+
+    if (mode === "1") {
+      const userName = window.prompt("请输入用户名");
+      if (!userName) return;
+      const password = window.prompt("请输入密码");
+      if (!password) return;
+      const confirmPassword = window.prompt("请确认密码");
+      if (confirmPassword !== password) {
+        alert("两次密码不一致");
+        return;
+      }
+
+      fetch("/api/user-data/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: userName.toLowerCase().trim(),
+          name: userName,
+          password,
+        }),
+      })
+        .then((res) => {
+          if (res.status === 409) throw new Error("用户已存在");
+          if (!res.ok) throw new Error("注册失败");
+          return res.json();
+        })
+        .then((data) => {
+          alert("注册成功！请登陆");
+        })
+        .catch((err) => {
+          alert("注册失败: " + err.message);
+        });
+      return;
+    }
+
+    if (mode === "2") {
+      const inputName = window.prompt("请输入用户名");
+      if (!inputName) return;
+      const inputPassword = window.prompt("请输入密码");
+      if (!inputPassword) return;
+      loginWithCredentials(inputName, inputPassword).catch(() => {});
+      return;
+    }
+
+    alert("请输入 1 或 2");
   }
 
   async function handleManualSync() {

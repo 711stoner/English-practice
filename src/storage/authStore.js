@@ -28,18 +28,47 @@ export function loadAuthUser() {
   return normalizeUser(parsed);
 }
 
-export function loginWithCredentials(name, password) {
+export async function loginWithCredentials(name, password) {
   const cleanName = String(name || "").trim();
   const cleanPassword = String(password || "");
   if (!cleanName || !cleanPassword) return null;
-  const user = {
-    id: `u_${cleanName.toLowerCase().replace(/\s+/g, "_")}`,
-    name: cleanName,
-    password: cleanPassword,
-  };
-  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
-  notifyChanged();
-  return user;
+
+  try {
+    const response = await fetch("/api/user-data/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: cleanName.toLowerCase().replace(/\s+/g, "_"),
+        password: cleanPassword,
+      }),
+    });
+
+    if (response.status === 404) {
+      alert("用户不存在");
+      return null;
+    }
+    if (response.status === 401) {
+      alert("密码错误");
+      return null;
+    }
+    if (!response.ok) {
+      alert("登陆失败");
+      return null;
+    }
+
+    const data = await response.json();
+    const user = {
+      id: data.userId,
+      name: data.name || cleanName,
+      password: cleanPassword,
+    };
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
+    notifyChanged();
+    return user;
+  } catch (err) {
+    alert("登陆失败: " + err.message);
+    return null;
+  }
 }
 
 export function logout() {
