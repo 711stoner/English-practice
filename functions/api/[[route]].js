@@ -1,12 +1,4 @@
-function simpleHash(str) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  return Math.abs(hash).toString(16);
-}
+import { UserRegistry } from '../durable_objects/UserRegistry.js';
 
 export async function onRequest(context) {
   const { request, env, params } = context;
@@ -23,6 +15,16 @@ export async function onRequest(context) {
 
   if (request.method === 'OPTIONS') {
     return new Response(null, { status: 200, headers });
+  }
+
+  // Get or create singleton Durable Object for user registry
+  let userRegistry = null;
+  try {
+    if (env.USER_REGISTRY) {
+      userRegistry = env.USER_REGISTRY.get('default');
+    }
+  } catch (e) {
+    // Durable Object not available, will use fallback
   }
 
   // Learning Stats
@@ -119,31 +121,25 @@ export async function onRequest(context) {
         });
       }
 
-      const existingData = await env.STORE.get(`user_${userId}`);
-      if (existingData) {
-        return new Response(JSON.stringify({ error: 'User already exists' }), {
-          status: 409,
-          headers,
-        });
+      if (userRegistry) {
+        try {
+          const result = await userRegistry.registerUser(userId, name, password);
+          if (result.error) {
+            return new Response(JSON.stringify({ error: result.error }), {
+              status: result.error === 'User already exists' ? 409 : 400,
+              headers,
+            });
+          }
+          return new Response(JSON.stringify(result), { status: 201, headers });
+        } catch (e) {
+          console.error('Durable Object error:', e);
+        }
       }
 
-      const userData = {
-        userId,
-        name,
-        password_hash: simpleHash(password),
-        sentences: [],
-        history: [],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      await env.STORE.put(`user_${userId}`, JSON.stringify(userData));
-      return new Response(JSON.stringify({
-        userId,
-        name,
-        sentences: [],
-        history: [],
-        updated_at: userData.updated_at,
-      }), { status: 201, headers });
+      return new Response(JSON.stringify({ error: '注册失败' }), {
+        status: 500,
+        headers,
+      });
     }
   }
 
@@ -160,31 +156,26 @@ export async function onRequest(context) {
         });
       }
 
-      const existingData = await env.STORE.get(`user_${userId}`);
-      const existing = existingData ? JSON.parse(existingData) : null;
-
-      if (!existing) {
-        return new Response(JSON.stringify({ error: 'User not found' }), {
-          status: 404,
-          headers,
-        });
+      if (userRegistry) {
+        try {
+          const result = await userRegistry.loginUser(userId, password);
+          if (result.error) {
+            const status = result.error === 'User not found' ? 404 : 401;
+            return new Response(JSON.stringify({ error: result.error }), {
+              status,
+              headers,
+            });
+          }
+          return new Response(JSON.stringify(result), { status: 200, headers });
+        } catch (e) {
+          console.error('Durable Object error:', e);
+        }
       }
 
-      const passwordHash = simpleHash(password);
-      if (existing.password_hash !== passwordHash) {
-        return new Response(JSON.stringify({ error: 'Invalid password' }), {
-          status: 401,
-          headers,
-        });
-      }
-
-      return new Response(JSON.stringify({
-        userId,
-        name: existing.name || userId,
-        sentences: existing.sentences || [],
-        history: existing.history || [],
-        updated_at: existing.updated_at || null,
-      }), { status: 200, headers });
+      return new Response(JSON.stringify({ error: '登陆失败' }), {
+        status: 500,
+        headers,
+      });
     }
   }
 
@@ -201,33 +192,26 @@ export async function onRequest(context) {
         });
       }
 
-      const existingData = await env.STORE.get(`user_${userId}`);
-      const existing = existingData ? JSON.parse(existingData) : null;
-
-      if (!existing) {
-        return new Response(JSON.stringify({ error: 'User not found' }), {
-          status: 404,
-          headers,
-        });
+      if (userRegistry) {
+        try {
+          const result = await userRegistry.resetPassword(userId, oldPassword, newPassword);
+          if (result.error) {
+            const status = result.error === 'User not found' ? 404 : 401;
+            return new Response(JSON.stringify({ error: result.error }), {
+              status,
+              headers,
+            });
+          }
+          return new Response(JSON.stringify(result), { status: 200, headers });
+        } catch (e) {
+          console.error('Durable Object error:', e);
+        }
       }
 
-      const oldPasswordHash = simpleHash(oldPassword);
-      if (existing.password_hash !== oldPasswordHash) {
-        return new Response(JSON.stringify({ error: 'Old password incorrect' }), {
-          status: 401,
-          headers,
-        });
-      }
-
-      existing.password_hash = simpleHash(newPassword);
-      existing.updated_at = new Date().toISOString();
-      await env.STORE.put(`user_${userId}`, JSON.stringify(existing));
-
-      return new Response(JSON.stringify({
-        ok: true,
-        userId,
-        message: 'Password reset successfully',
-      }), { status: 200, headers });
+      return new Response(JSON.stringify({ error: '重置失败' }), {
+        status: 500,
+        headers,
+      });
     }
   }
 
@@ -243,40 +227,25 @@ export async function onRequest(context) {
         });
       }
 
-      const existingData = await env.STORE.get(`user_${userId}`);
-      const existing = existingData ? JSON.parse(existingData) : null;
-      const passwordHash = simpleHash(password);
-
-      if (existing && existing.password_hash !== passwordHash) {
-        return new Response(JSON.stringify({ error: 'Invalid userId or password' }), {
-          status: 401,
-          headers,
-        });
+      if (userRegistry) {
+        try {
+          const result = await userRegistry.syncUser(userId, password);
+          if (result.error) {
+            return new Response(JSON.stringify({ error: result.error }), {
+              status: 401,
+              headers,
+            });
+          }
+          return new Response(JSON.stringify(result), { status: 200, headers });
+        } catch (e) {
+          console.error('Durable Object error:', e);
+        }
       }
 
-      if (!existing) {
-        const userData = {
-          userId,
-          password_hash: passwordHash,
-          sentences: [],
-          history: [],
-          updated_at: new Date().toISOString(),
-        };
-        await env.STORE.put(`user_${userId}`, JSON.stringify(userData));
-        return new Response(JSON.stringify({
-          userId,
-          sentences: [],
-          history: [],
-          updated_at: userData.updated_at,
-        }), { status: 200, headers });
-      }
-
-      return new Response(JSON.stringify({
-        userId,
-        sentences: existing.sentences || [],
-        history: existing.history || [],
-        updated_at: existing.updated_at || null,
-      }), { status: 200, headers });
+      return new Response(JSON.stringify({ error: '同步失败' }), {
+        status: 500,
+        headers,
+      });
     }
   }
 
@@ -292,32 +261,25 @@ export async function onRequest(context) {
         });
       }
 
-      const existingData = await env.STORE.get(`user_${userId}`);
-      const existing = existingData ? JSON.parse(existingData) : null;
-      const passwordHash = simpleHash(password);
-
-      if (existing && existing.password_hash !== passwordHash) {
-        return new Response(JSON.stringify({ error: 'Invalid userId or password' }), {
-          status: 401,
-          headers,
-        });
+      if (userRegistry) {
+        try {
+          const result = await userRegistry.upsertUser(userId, password, sentences, history);
+          if (result.error) {
+            return new Response(JSON.stringify({ error: result.error }), {
+              status: 401,
+              headers,
+            });
+          }
+          return new Response(JSON.stringify(result), { status: 200, headers });
+        } catch (e) {
+          console.error('Durable Object error:', e);
+        }
       }
 
-      const userData = {
-        userId,
-        password_hash: existing?.password_hash || passwordHash,
-        sentences: sentences || existing?.sentences || [],
-        history: (history || existing?.history || []).slice(0, 365),
-        updated_at: new Date().toISOString(),
-      };
-
-      await env.STORE.put(`user_${userId}`, JSON.stringify(userData));
-
-      return new Response(JSON.stringify({
-        ok: true,
-        userId,
-        updated_at: userData.updated_at,
-      }), { status: 200, headers });
+      return new Response(JSON.stringify({ error: '更新失败' }), {
+        status: 500,
+        headers,
+      });
     }
   }
 
