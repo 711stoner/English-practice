@@ -1,5 +1,4 @@
 name = "english-practice"
-type = "service"
 main = "functions/api/[[route]].js"
 compatibility_date = "2024-01-01"
 
