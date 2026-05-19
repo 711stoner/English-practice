@@ -1,7 +1,11 @@
-import crypto from 'crypto';
-
-function hashPassword(password) {
-  return crypto.createHash('sha256').update(password).digest('hex');
+function simpleHash(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash).toString(16);
 }
 
 export async function onRequest(context) {
@@ -126,7 +130,7 @@ export async function onRequest(context) {
       const userData = {
         userId,
         name,
-        password_hash: hashPassword(password),
+        password_hash: simpleHash(password),
         sentences: [],
         history: [],
         created_at: new Date().toISOString(),
@@ -166,7 +170,7 @@ export async function onRequest(context) {
         });
       }
 
-      const passwordHash = hashPassword(password);
+      const passwordHash = simpleHash(password);
       if (existing.password_hash !== passwordHash) {
         return new Response(JSON.stringify({ error: 'Invalid password' }), {
           status: 401,
@@ -207,7 +211,7 @@ export async function onRequest(context) {
         });
       }
 
-      const oldPasswordHash = hashPassword(oldPassword);
+      const oldPasswordHash = simpleHash(oldPassword);
       if (existing.password_hash !== oldPasswordHash) {
         return new Response(JSON.stringify({ error: 'Old password incorrect' }), {
           status: 401,
@@ -215,7 +219,7 @@ export async function onRequest(context) {
         });
       }
 
-      existing.password_hash = hashPassword(newPassword);
+      existing.password_hash = simpleHash(newPassword);
       existing.updated_at = new Date().toISOString();
       await env.STORE.put(`user_${userId}`, JSON.stringify(existing));
 
@@ -241,7 +245,7 @@ export async function onRequest(context) {
 
       const existingData = await env.STORE.get(`user_${userId}`);
       const existing = existingData ? JSON.parse(existingData) : null;
-      const passwordHash = hashPassword(password);
+      const passwordHash = simpleHash(password);
 
       if (existing && existing.password_hash !== passwordHash) {
         return new Response(JSON.stringify({ error: 'Invalid userId or password' }), {
@@ -290,7 +294,7 @@ export async function onRequest(context) {
 
       const existingData = await env.STORE.get(`user_${userId}`);
       const existing = existingData ? JSON.parse(existingData) : null;
-      const passwordHash = hashPassword(password);
+      const passwordHash = simpleHash(password);
 
       if (existing && existing.password_hash !== passwordHash) {
         return new Response(JSON.stringify({ error: 'Invalid userId or password' }), {
