@@ -7,7 +7,3 @@ compatibility_flags = ["nodejs_compat"]
 name = "USER_REGISTRY"
 class_name = "UserRegistry"
 script_name = "english-practice"
-
-[[migrations]]
-tag = "v1"
-new_classes = ["UserRegistry"]
