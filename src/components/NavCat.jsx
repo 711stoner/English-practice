@@ -133,8 +133,42 @@ export default function NavCat() {
   );
 }
 
+const GUIDE_CONTENT = `
+📚 使用指南
+
+1️⃣ 注册与登陆
+   • 点击"登陆"按钮
+   • 输入 1 = 注册新账号
+   • 输入 2 = 用现有账号登陆
+   • 输入 3 = 重置忘记的密码
+
+2️⃣ 添加句子
+   • 📚 从书籍导入：快速导入 5 本精选书籍
+   • ✏️ 自行添加：粘贴文本或导入 Excel
+
+3️⃣ 学习流程
+   • 进入"✏️ 练习"页面开始背诵
+   • 输入答案、查看提示、朗读
+   • 给出评分：会/模糊/不会
+
+4️⃣ 查看进度
+   • "📊 仪表盘"显示学习统计
+   • 连续打卡、复习进度、掌握情况
+
+5️⃣ 数据管理
+   • 💾 备份与恢复：导出和导入数据
+   • 自动同步到云端，不用担心丢失
+
+6️⃣ 其他功能
+   • 修改密码：登陆后点击"登陆"→输入 1
+   • 当前状态：右上角显示登陆账号和同步状态
+
+💡 小贴士：点击小猫可以再次查看此指南！
+`.trim();
+
 export function ScreenCat() {
   const [dims, setDims] = useState({ w: window.innerWidth, h: window.innerHeight });
+  const [showGuide, setShowGuide] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -147,17 +181,61 @@ export function ScreenCat() {
   const worldWidth = dims.w / 50;
   const worldHeight = dims.h / 50;
 
+  const handleCanvasClick = () => {
+    setShowGuide(!showGuide);
+  };
+
   return (
-    <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 50 }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 50 }}>
       <Canvas
         orthographic
         camera={{ zoom: 50, position: [0, 0, 10] }}
-        style={{ width: '100%', height: '100%', pointerEvents: 'none' }}
+        style={{ width: '100%', height: '100%', cursor: 'pointer' }}
+        onClick={handleCanvasClick}
       >
         <ambientLight intensity={1} />
         <directionalLight position={[5, 5, 5]} intensity={0.8} />
         <CatModel screenWidth={worldWidth} screenHeight={worldHeight} />
       </Canvas>
+
+      {showGuide && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 100,
+            padding: '20px',
+          }}
+          onClick={() => setShowGuide(false)}
+        >
+          <div
+            style={{
+              background: '#0a0c14',
+              border: '2px solid #7c3aed',
+              borderRadius: '12px',
+              padding: '24px',
+              maxWidth: '500px',
+              maxHeight: '80vh',
+              overflow: 'auto',
+              color: '#e2e8f0',
+              fontSize: '13px',
+              lineHeight: '1.8',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {GUIDE_CONTENT}
+            <div style={{ marginTop: '16px', textAlign: 'center', fontSize: '12px', color: '#64748b' }}>
+              点击外侧关闭 | 点击小猫再次打开
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
