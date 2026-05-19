@@ -417,6 +417,134 @@ function createUserDataApiPlugin() {
           return;
         }
 
+        if (req.method === "POST" && pathname === "/api/user-data/register") {
+          const body = await parseJsonBody(req);
+          const userId = normalizeUserId(body?.userId || "");
+          const name = String(body?.name || "").trim();
+          const password = normalizePassword(body?.password || "");
+
+          if (!userId || !password || !name) {
+            sendJson(res, 400, { error: "Missing userId, password or name" });
+            return;
+          }
+
+          const payload = await readUserDataFile();
+          if (payload.users[userId]) {
+            sendJson(res, 409, { error: "User already exists" });
+            return;
+          }
+
+          const passwordHash = hashPassword(password);
+          const nextUsers = {
+            ...payload.users,
+            [userId]: {
+              userId,
+              name,
+              password_hash: passwordHash,
+              sentences: [],
+              history: [],
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          };
+
+          await writeUserDataFile({
+            ...payload,
+            users: nextUsers,
+          });
+
+          sendJson(res, 201, {
+            userId,
+            name,
+            sentences: [],
+            history: [],
+            updated_at: nextUsers[userId].updated_at,
+          });
+          return;
+        }
+
+        if (req.method === "POST" && pathname === "/api/user-data/login") {
+          const body = await parseJsonBody(req);
+          const userId = normalizeUserId(body?.userId || "");
+          const password = normalizePassword(body?.password || "");
+
+          if (!userId || !password) {
+            sendJson(res, 400, { error: "Missing userId or password" });
+            return;
+          }
+
+          const payload = await readUserDataFile();
+          const existing = payload.users[userId];
+
+          if (!existing) {
+            sendJson(res, 404, { error: "User not found" });
+            return;
+          }
+
+          const passwordHash = hashPassword(password);
+          if (existing.password_hash !== passwordHash) {
+            sendJson(res, 401, { error: "Invalid password" });
+            return;
+          }
+
+          sendJson(res, 200, {
+            userId,
+            name: existing.name || userId,
+            sentences: toObjectArray(existing.sentences),
+            history: toObjectArray(existing.history),
+            updated_at: typeof existing.updated_at === "string" ? existing.updated_at : null,
+          });
+          return;
+        }
+
+        if (req.method === "POST" && pathname === "/api/user-data/reset-password") {
+          const body = await parseJsonBody(req);
+          const userId = normalizeUserId(body?.userId || "");
+          const oldPassword = normalizePassword(body?.oldPassword || "");
+          const newPassword = normalizePassword(body?.newPassword || "");
+
+          if (!userId || !oldPassword || !newPassword) {
+            sendJson(res, 400, { error: "Missing userId, oldPassword or newPassword" });
+            return;
+          }
+
+          const payload = await readUserDataFile();
+          const existing = payload.users[userId];
+
+          if (!existing) {
+            sendJson(res, 404, { error: "User not found" });
+            return;
+          }
+
+          const oldPasswordHash = hashPassword(oldPassword);
+          if (existing.password_hash !== oldPasswordHash) {
+            sendJson(res, 401, { error: "Old password incorrect" });
+            return;
+          }
+
+          const newPasswordHash = hashPassword(newPassword);
+          const nextUsers = {
+            ...payload.users,
+            [userId]: {
+              ...existing,
+              password_hash: newPasswordHash,
+              updated_at: new Date().toISOString(),
+            },
+          };
+
+          await writeUserDataFile({
+            ...payload,
+            users: nextUsers,
+          });
+
+          sendJson(res, 200, {
+            ok: true,
+            userId,
+            message: "Password reset successfully",
+          });
+          return;
+        }
+
         if (req.method === "POST" && pathname === "/api/user-data/sync") {
           const body = await parseJsonBody(req);
           const userId = normalizeUserId(body?.userId || "");
