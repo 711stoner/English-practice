@@ -4,7 +4,7 @@ import { useRef, useState, useEffect } from 'react';
 
 function CatModel({ screenWidth = 8, screenHeight = 6 }) {
   const groupRef = useRef();
-  const { scene, animations } = useGLTF('/cat.glb');
+  const { scene, animations } = useGLTF('/oiiaioooooiai_cat.glb');
   const { actions } = useAnimations(animations, groupRef);
   const stateRef = useRef({
     x: 0,
