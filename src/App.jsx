@@ -4,6 +4,7 @@ import SentenceBank from "./pages/SentenceBank.jsx";
 import Practice from "./pages/Practice.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import { ScreenCat } from "./components/NavCat.jsx";
+import Logo3DCat from "./components/Logo3DCat.jsx";
 import {
   loadAuthUser,
   loginWithCredentials,
@@ -253,7 +254,9 @@ export default function App() {
       <ScreenCat />
       <header className='nav' style={{ position: 'relative'}}>
         <div className='brand'>
-          <div className='brand-logo'>🐱</div>
+          <div className='brand-logo'>
+            <Logo3DCat />
+          </div>
           <div className='brand-title'>小猫学英语</div>
         </div>
 
