@@ -7,10 +7,14 @@ import { ScreenCat } from "./components/NavCat.jsx";
 import Logo3DCat from "./components/Logo3DCat.jsx";
 import {
   loadAuthUser,
-  loginWithCredentials,
   logout,
   subscribeAuthUser,
 } from "./storage/authStore.js";
+import {
+  registerUser,
+  loginUser,
+  resetPassword,
+} from "./storage/userRegistry.js";
 import {
   pushUserDataToCloud,
   syncUserDataFromCloud,
@@ -109,27 +113,12 @@ export default function App() {
           return;
         }
 
-        fetch("/api/user-data/reset-password", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: user.id,
-            oldPassword,
-            newPassword,
-          }),
-        })
-          .then((res) => {
-            if (res.status === 401) throw new Error("旧密码错误");
-            if (res.status === 404) throw new Error("用户不存在");
-            if (!res.ok) throw new Error("修改失败");
-            return res.json();
-          })
-          .then(() => {
-            alert("密码修改成功！");
-          })
-          .catch((err) => {
-            alert("修改失败: " + err.message);
-          });
+        const result = resetPassword(user.id, oldPassword, newPassword);
+        if (result.success) {
+          alert("密码修改成功！");
+        } else {
+          alert("修改失败: " + result.error);
+        }
         return;
       }
 
@@ -156,26 +145,12 @@ export default function App() {
         return;
       }
 
-      fetch("/api/user-data/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: userName.toLowerCase().trim(),
-          name: userName,
-          password,
-        }),
-      })
-        .then((res) => {
-          if (res.status === 409) throw new Error("用户已存在");
-          if (!res.ok) throw new Error("注册失败");
-          return res.json();
-        })
-        .then((data) => {
-          alert("注册成功！请登陆");
-        })
-        .catch((err) => {
-          alert("注册失败: " + err.message);
-        });
+      const result = registerUser(userName.toLowerCase().trim(), userName, password);
+      if (result.success) {
+        alert("注册成功！请登陆");
+      } else {
+        alert("注册失败: " + result.error);
+      }
       return;
     }
 
@@ -184,7 +159,19 @@ export default function App() {
       if (!inputName) return;
       const inputPassword = window.prompt("请输入密码");
       if (!inputPassword) return;
-      loginWithCredentials(inputName, inputPassword).catch(() => {});
+
+      const result = loginUser(inputName.toLowerCase().trim(), inputPassword);
+      if (result.success) {
+        const authUser = {
+          id: result.data.userId,
+          name: result.data.name,
+          password: inputPassword,
+        };
+        localStorage.setItem("sentence_memo_auth_user", JSON.stringify(authUser));
+        window.dispatchEvent(new Event("auth-user-changed"));
+      } else {
+        alert("登陆失败: " + result.error);
+      }
       return;
     }
 
@@ -201,27 +188,12 @@ export default function App() {
         return;
       }
 
-      fetch("/api/user-data/reset-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: userName.toLowerCase().trim(),
-          oldPassword,
-          newPassword,
-        }),
-      })
-        .then((res) => {
-          if (res.status === 401) throw new Error("旧密码错误");
-          if (res.status === 404) throw new Error("用户不存在");
-          if (!res.ok) throw new Error("重置失败");
-          return res.json();
-        })
-        .then(() => {
-          alert("密码重置成功！请用新密码登陆");
-        })
-        .catch((err) => {
-          alert("重置失败: " + err.message);
-        });
+      const result = resetPassword(userName.toLowerCase().trim(), oldPassword, newPassword);
+      if (result.success) {
+        alert("密码重置成功！请用新密码登陆");
+      } else {
+        alert("重置失败: " + result.error);
+      }
       return;
     }
 
