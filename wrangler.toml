@@ -1,6 +1,5 @@
 name = "english-practice"
 pages_build_output_dir = "dist"
-main = "functions/api/[[route]].js"
 compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
 
