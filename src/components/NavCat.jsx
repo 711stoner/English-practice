@@ -6,23 +6,37 @@ function CatModel({ screenWidth = 8, screenHeight = 6 }) {
   const groupRef = useRef();
   const { scene, animations } = useGLTF('/oiiaioooooiai_cat.glb');
   const { actions } = useAnimations(animations, groupRef);
+  const mousePos = useRef({ x: 0, y: 0 });
   const stateRef = useRef({
     x: 0,
     y: 0,
     directionX: 1,
     directionY: 1,
-    speedX: Math.random() * 0.4 + 0.3,
-    speedY: Math.random() * 0.4 + 0.3,
+    speedX: Math.random() * 0.15 + 0.08,
+    speedY: Math.random() * 0.15 + 0.08,
     tX: 0,
     tY: 0,
-    nextDirectionChangeTimeX: Math.random() * 3 + 2,
-    nextDirectionChangeTimeY: Math.random() * 3 + 2,
+    nextDirectionChangeTimeX: Math.random() * 4 + 2,
+    nextDirectionChangeTimeY: Math.random() * 4 + 2,
     currentAction: null,
-    nextActionTime: Math.random() * 4 + 1,
+    nextActionTime: Math.random() * 3 + 1,
     actionT: 0,
+    scale: 3.5,
   });
 
   const animationNames = Object.keys(actions || {});
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      mousePos.current = {
+        x: (e.clientX / window.innerWidth) * 2 - 1,
+        y: -(e.clientY / window.innerHeight) * 2 + 1,
+      };
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
   useFrame((state, delta) => {
     const s = stateRef.current;
@@ -48,15 +62,15 @@ function CatModel({ screenWidth = 8, screenHeight = 6 }) {
 
     if (s.tX > s.nextDirectionChangeTimeX) {
       s.directionX = Math.random() > 0.5 ? 1 : -1;
-      s.speedX = Math.random() * 0.4 + 0.3;
-      s.nextDirectionChangeTimeX = Math.random() * 3 + 2;
+      s.speedX = Math.random() * 0.2 + 0.03;
+      s.nextDirectionChangeTimeX = Math.random() * 4 + 1.5;
       s.tX = 0;
     }
 
     if (s.tY > s.nextDirectionChangeTimeY) {
       s.directionY = Math.random() > 0.5 ? 1 : -1;
-      s.speedY = Math.random() * 0.4 + 0.3;
-      s.nextDirectionChangeTimeY = Math.random() * 3 + 2;
+      s.speedY = Math.random() * 0.2 + 0.03;
+      s.nextDirectionChangeTimeY = Math.random() * 4 + 1.5;
       s.tY = 0;
     }
 
@@ -64,19 +78,19 @@ function CatModel({ screenWidth = 8, screenHeight = 6 }) {
       const action = animationNames[Math.floor(Math.random() * animationNames.length)];
       if (actions[action] && actions[action] !== s.currentAction) {
         if (s.currentAction) {
-          actions[s.currentAction].fadeOut(0.3);
+          actions[s.currentAction].fadeOut(0.2);
         }
         s.currentAction = action;
-        actions[action].reset().fadeIn(0.3).play();
+        actions[action].reset().fadeIn(0.2).play();
       }
-      s.nextActionTime = Math.random() * 5 + 2;
+      s.nextActionTime = Math.random() * 4 + 1;
       s.actionT = 0;
     }
 
     if (groupRef.current) {
       groupRef.current.position.x = s.x;
       groupRef.current.position.y = s.y;
-      groupRef.current.scale.x = s.directionX;
+      groupRef.current.scale.set(s.scale * s.directionX, s.scale, s.scale);
     }
   });
 
