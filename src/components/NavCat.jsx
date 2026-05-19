@@ -164,6 +164,8 @@ const GUIDE_CONTENT = `
    • 当前状态：右上角显示登陆账号和同步状态
 
 💡 小贴士：点击小猫可以再次查看此指南！
+
+📧 反馈邮箱：juejiangfm@gmail.com
 `.trim();
 
 export function ScreenCat() {
