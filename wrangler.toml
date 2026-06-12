@@ -5,5 +5,5 @@ compatibility_flags = ["nodejs_compat"]
 
 [[env.production.kv_namespaces]]
 binding = "KV_STORE"
-id = "english-practice-kv"
-preview_id = "english-practice-kv-preview"
+id = "74bccb4f796240cf911adf4ff050d992"
+preview_id = "74bccb4f796240cf911adf4ff050d992"
