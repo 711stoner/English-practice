@@ -263,13 +263,13 @@ export default function Dashboard() {
       {showRules && (
         <div className='card'>
           <h3>学习规则说明</h3>
-          <p style={{ color: "#666", marginTop: 4 }}>
+          <p style={{ color: "var(--muted)", marginTop: 4 }}>
             这套规则用于帮助你更稳定地记住英文整句，下面是当前应用正在执行的核心学习逻辑。
           </p>
           {MEMORY_RULES_SECTIONS.map((section) => (
             <details key={section.title} style={{ marginTop: 10 }}>
               <summary style={{ cursor: "pointer", fontWeight: 700 }}>{section.title}</summary>
-              <div style={{ marginTop: 6, color: "#666" }}>{section.summary}</div>
+              <div style={{ marginTop: 6, color: "var(--muted)" }}>{section.summary}</div>
               <ul style={{ marginTop: 6, marginBottom: 0, paddingLeft: 20 }}>
                 {section.points.map((point) => (
                   <li key={point} style={{ marginTop: 4 }}>
@@ -279,7 +279,7 @@ export default function Dashboard() {
               </ul>
             </details>
           ))}
-          <div style={{ marginTop: 12, color: "#666", fontSize: 12 }}>
+          <div style={{ marginTop: 12, color: "var(--muted)", fontSize: 12 }}>
             {MEMORY_RULES_FOOTNOTE}
           </div>
         </div>
@@ -305,7 +305,7 @@ export default function Dashboard() {
             <div className='stat-label'>综合回忆分</div>
           </div>
           <div className='stat-item'>
-            <div className='stat-value' style={{ color: '#c084fc'}}>{streakDays}</div>
+            <div className='stat-value' style={{ color: '#8b5cf6' }}>{streakDays}</div>
             <div className='stat-label'>连续打卡</div>
           </div>
           <div className='stat-item'>
@@ -388,10 +388,10 @@ export default function Dashboard() {
             key={s.id}
             style={{
               padding: 12,
-              background: idx % 2 === 0 ? "transparent" : "rgba(124,58,237,0.03)", borderBottom: "1px solid rgba(124,58,237,0.25)", display: "flex", justifyContent: "space-between", alignItems: "center"}}
+              background: idx % 2 === 0 ? "transparent" : "rgba(59,130,246,0.04)", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center"}}
           >
             <div>
-              <div style={{ fontWeight: 600, color: "#fff" }}>{s.meaning}</div>
+              <div style={{ fontWeight: 600, color: "var(--ink)" }}>{s.meaning}</div>
               <div style={{ marginTop: 4, fontSize: 12, color: "#64748b" }}>
                 {getReviewStatusLabel(s.srs)}
               </div>
@@ -400,7 +400,7 @@ export default function Dashboard() {
           </div>
         ))}
         {dueTotalCount > dueList.length && (
-          <div style={{ marginTop: 12, padding: 12, background: "rgba(6,182,212,0.1)", color: "#06b6d4", fontSize: 13, borderRadius: 8, textAlign: "center" }}>
+          <div style={{ marginTop: 12, padding: 12, background: "rgba(14,165,233,0.08)", color: "var(--cyan)", fontSize: 13, borderRadius: 8, textAlign: "center" }}>
             还有 <strong>{dueTotalCount - dueList.length}</strong> 条待复习
           </div>
         )}

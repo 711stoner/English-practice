@@ -365,7 +365,7 @@ export default function SentenceBank() {
     <div>
       <div className='card'>
         <h2>📚 从书籍导入</h2>
-        <p style={{ color: "#64748b", marginTop: 4 }}>选择一本书，快速导入精选句子</p>
+        <p style={{ color: "var(--muted)", marginTop: 4 }}>选择一本书，快速导入精选句子</p>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8, marginBottom: 16 }}>
           {BOOKS.map((book) => (
@@ -378,10 +378,10 @@ export default function SentenceBank() {
               }}
               style={{
                 padding: "12px",
-                background: selectedBook?.id === book.id ? "rgba(124,58,237,0.3)" : "rgba(124,58,237,0.1)",
-                border: selectedBook?.id === book.id ? "2px solid #7c3aed" : "1px solid rgba(124,58,237,0.25)",
+                background: selectedBook?.id === book.id ? "var(--accent)" : "rgba(59,130,246,0.08)",
+                border: selectedBook?.id === book.id ? "2px solid var(--accent)" : "1px solid var(--border)",
                 borderRadius: 10,
-                color: "#fff",
+                color: selectedBook?.id === book.id ? "#fff" : "var(--ink)",
                 cursor: "pointer",
                 transition: "all 0.2s ease",
                 fontSize: 13,
@@ -389,14 +389,14 @@ export default function SentenceBank() {
               }}
               onMouseEnter={(e) => {
                 if (selectedBook?.id !== book.id) {
-                  e.currentTarget.style.background = "rgba(124,58,237,0.15)";
-                  e.currentTarget.style.borderColor = "rgba(124,58,237,0.4)";
+                  e.currentTarget.style.background = "rgba(59,130,246,0.12)";
+                  e.currentTarget.style.borderColor = "var(--accent)";
                 }
               }}
               onMouseLeave={(e) => {
                 if (selectedBook?.id !== book.id) {
-                  e.currentTarget.style.background = "rgba(124,58,237,0.1)";
-                  e.currentTarget.style.borderColor = "rgba(124,58,237,0.25)";
+                  e.currentTarget.style.background = "rgba(59,130,246,0.08)";
+                  e.currentTarget.style.borderColor = "var(--border)";
                 }
               }}
             >
@@ -406,24 +406,24 @@ export default function SentenceBank() {
         </div>
 
         {selectedBook && (
-          <div style={{ padding: 16, background: "rgba(6,182,212,0.08)", border: "1px solid rgba(6,182,212,0.25)", borderRadius: 10, marginBottom: 12 }}>
+          <div style={{ padding: 16, background: "rgba(14,165,233,0.06)", border: "1px solid var(--border-cyan)", borderRadius: 10, marginBottom: 12 }}>
             <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 13, color: "#64748b", marginBottom: 4 }}>书名</div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{selectedBook.title}</div>
+              <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>书名</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>{selectedBook.title}</div>
             </div>
             <div style={{ marginBottom: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div>
-                <div style={{ fontSize: 13, color: "#64748b", marginBottom: 4 }}>分类</div>
-                <div style={{ fontSize: 14, color: "#06b6d4" }}>{selectedBook.category}</div>
+                <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>分类</div>
+                <div style={{ fontSize: 14, color: "var(--cyan)" }}>{selectedBook.category}</div>
               </div>
               <div>
-                <div style={{ fontSize: 13, color: "#64748b", marginBottom: 4 }}>句子数</div>
-                <div style={{ fontSize: 14, color: "#06b6d4" }}>{selectedBook.sentences.length} 条</div>
+                <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>句子数</div>
+                <div style={{ fontSize: 14, color: "var(--cyan)" }}>{selectedBook.sentences.length} 条</div>
               </div>
             </div>
             <div>
-              <div style={{ fontSize: 13, color: "#64748b", marginBottom: 4 }}>描述</div>
-              <div style={{ fontSize: 13, color: "#e2e8f0" }}>{selectedBook.description}</div>
+              <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>描述</div>
+              <div style={{ fontSize: 13, color: "var(--ink)" }}>{selectedBook.description}</div>
             </div>
           </div>
         )}
@@ -456,7 +456,7 @@ export default function SentenceBank() {
 
       <div className='card'>
         <h2>✏️ 自行添加</h2>
-        <p style={{ color: "#64748b", marginTop: 4 }}>选择添加方式</p>
+        <p style={{ color: "var(--muted)", marginTop: 4 }}>选择添加方式</p>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8, marginBottom: 16 }}>
           <button
@@ -464,10 +464,10 @@ export default function SentenceBank() {
             onClick={() => setAddMode("bulk")}
             style={{
               padding: "12px",
-              background: addMode === "bulk" ? "rgba(124,58,237,0.3)" : "rgba(124,58,237,0.1)",
-              border: addMode === "bulk" ? "2px solid #7c3aed" : "1px solid rgba(124,58,237,0.25)",
+              background: addMode === "bulk" ? "var(--accent)" : "rgba(59,130,246,0.08)",
+              border: addMode === "bulk" ? "2px solid var(--accent)" : "1px solid var(--border)",
               borderRadius: 10,
-              color: "#fff",
+              color: addMode === "bulk" ? "#fff" : "var(--ink)",
               cursor: "pointer",
               transition: "all 0.2s ease",
               fontSize: 13,
@@ -475,14 +475,14 @@ export default function SentenceBank() {
             }}
             onMouseEnter={(e) => {
               if (addMode !== "bulk") {
-                e.currentTarget.style.background = "rgba(124,58,237,0.15)";
-                e.currentTarget.style.borderColor = "rgba(124,58,237,0.4)";
+                e.currentTarget.style.background = "rgba(59,130,246,0.12)";
+                e.currentTarget.style.borderColor = "var(--accent)";
               }
             }}
             onMouseLeave={(e) => {
               if (addMode !== "bulk") {
-                e.currentTarget.style.background = "rgba(124,58,237,0.1)";
-                e.currentTarget.style.borderColor = "rgba(124,58,237,0.25)";
+                e.currentTarget.style.background = "rgba(59,130,246,0.08)";
+                e.currentTarget.style.borderColor = "var(--border)";
               }
             }}
           >
@@ -493,10 +493,10 @@ export default function SentenceBank() {
             onClick={() => setAddMode("excel")}
             style={{
               padding: "12px",
-              background: addMode === "excel" ? "rgba(124,58,237,0.3)" : "rgba(124,58,237,0.1)",
-              border: addMode === "excel" ? "2px solid #7c3aed" : "1px solid rgba(124,58,237,0.25)",
+              background: addMode === "excel" ? "var(--accent)" : "rgba(59,130,246,0.08)",
+              border: addMode === "excel" ? "2px solid var(--accent)" : "1px solid var(--border)",
               borderRadius: 10,
-              color: "#fff",
+              color: addMode === "excel" ? "#fff" : "var(--ink)",
               cursor: "pointer",
               transition: "all 0.2s ease",
               fontSize: 13,
@@ -504,14 +504,14 @@ export default function SentenceBank() {
             }}
             onMouseEnter={(e) => {
               if (addMode !== "excel") {
-                e.currentTarget.style.background = "rgba(124,58,237,0.15)";
-                e.currentTarget.style.borderColor = "rgba(124,58,237,0.4)";
+                e.currentTarget.style.background = "rgba(59,130,246,0.12)";
+                e.currentTarget.style.borderColor = "var(--accent)";
               }
             }}
             onMouseLeave={(e) => {
               if (addMode !== "excel") {
-                e.currentTarget.style.background = "rgba(124,58,237,0.1)";
-                e.currentTarget.style.borderColor = "rgba(124,58,237,0.25)";
+                e.currentTarget.style.background = "rgba(59,130,246,0.08)";
+                e.currentTarget.style.borderColor = "var(--border)";
               }
             }}
           >
@@ -521,8 +521,8 @@ export default function SentenceBank() {
 
         {addMode === "bulk" && (
           <>
-            <p style={{ color: "#64748b", marginTop: 12, marginBottom: 8 }}>格式一：英文句子{"<Tab>"}中文释义（同一行）</p>
-            <p style={{ color: "#64748b", marginBottom: 12 }}>格式二：英文一行 + 中文下一行</p>
+            <p style={{ color: "var(--muted)", marginTop: 12, marginBottom: 8 }}>格式一：英文句子{"<Tab>"}中文释义（同一行）</p>
+            <p style={{ color: "var(--muted)", marginBottom: 12 }}>格式二：英文一行 + 中文下一行</p>
             <textarea
               className='input' rows={6}
               value={bulkText}
@@ -544,7 +544,7 @@ export default function SentenceBank() {
                   <div style={{ marginTop: 8 }}>
                     <strong>失败明细（最多前 10 行）：</strong>
                     {bulkResult.failedPreview.map((f, i) => (
-                      <div key={i} style={{ color: "#a00" }}>
+                      <div key={i} style={{ color: "#dc2626" }}>
                         行号 {f.lineNumber}：{f.raw}（{f.reason}）
                       </div>
                     ))}
@@ -577,7 +577,7 @@ export default function SentenceBank() {
                   <div style={{ marginTop: 8 }}>
                     <strong>失败明细（最多前 10 行）：</strong>
                     {excelResult.failedPreview.map((f, i) => (
-                      <div key={i} style={{ color: "#a00" }}>
+                      <div key={i} style={{ color: "#dc2626" }}>
                         行号 {f.lineNumber}：{f.text} / {f.meaning}（{f.reason}）
                       </div>
                     ))}
@@ -595,7 +595,7 @@ export default function SentenceBank() {
           <button className='button' type='button' onClick={handleExport} style={{ padding: "10px 12px" }}>
             📥 导出备份
           </button>
-          <label style={{ padding: "10px 12px", background: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.25)", borderRadius: 10, textAlign: "center", cursor: "pointer", transition: "all 0.3s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "rgba(124,58,237,0.2)"} onMouseLeave={(e) => e.currentTarget.style.background = "rgba(124,58,237,0.1)"}>
+          <label style={{ padding: "10px 12px", background: "rgba(59,130,246,0.08)", border: "1px solid var(--border)", borderRadius: 10, textAlign: "center", cursor: "pointer", transition: "all 0.3s ease", color: "var(--ink)" }} onMouseEnter={(e) => e.currentTarget.style.background = "rgba(59,130,246,0.15)"} onMouseLeave={(e) => e.currentTarget.style.background = "rgba(59,130,246,0.08)"}>
             <span style={{ fontSize: 14, fontWeight: 600 }}>📂 选择文件</span>
             <input
               type="file" accept=".json" onChange={(e) => setBackupFile(e.target.files?.[0] || null)}
@@ -608,18 +608,18 @@ export default function SentenceBank() {
         </div>
 
         {backupResult && (
-          <div style={{ padding: 16, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 10 }}>
+          <div style={{ padding: 16, background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 10 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
               <div>
-                <div style={{ fontSize: 12, color: "#64748b", marginBottom: 4 }}>新增</div>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>新增</div>
                 <div style={{ fontSize: 20, fontWeight: 700, color: "#22c55e" }}>{backupResult.added}</div>
               </div>
               <div>
-                <div style={{ fontSize: 12, color: "#64748b", marginBottom: 4 }}>覆盖</div>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>覆盖</div>
                 <div style={{ fontSize: 20, fontWeight: 700, color: "#f97316" }}>{backupResult.updated}</div>
               </div>
               <div>
-                <div style={{ fontSize: 12, color: "#64748b", marginBottom: 4 }}>失败</div>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>失败</div>
                 <div style={{ fontSize: 20, fontWeight: 700, color: "#ef4444" }}>{backupResult.failedCount}</div>
               </div>
             </div>
@@ -641,7 +641,7 @@ export default function SentenceBank() {
       <div className='card'>
         <h2 style={{ marginTop: 0 }}>📚 句子列表（共 {sentences.length} 条）</h2>
         {sentences.length === 0 && (
-          <p style={{ color: "#64748b", textAlign: "center", padding: "24px 0", margin: 0 }}>
+          <p style={{ color: "var(--muted)", textAlign: "center", padding: "24px 0", margin: 0 }}>
             暂无句子，请添加开始学习
           </p>
         )}
@@ -651,24 +651,24 @@ export default function SentenceBank() {
               key={s.id}
               style={{
                 padding: 16,
-                background: idx % 2 === 0 ? "transparent" : "rgba(124,58,237,0.03)", borderBottom: "1px solid rgba(124,58,237,0.25)", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12,
+                background: idx % 2 === 0 ? "transparent" : "rgba(59,130,246,0.04)", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12,
                 transition: "all 0.3s ease"}}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(124,58,237,0.08)";
-                e.currentTarget.style.borderColor = "#7c3aed";
+                e.currentTarget.style.background = "rgba(59,130,246,0.08)";
+                e.currentTarget.style.borderColor = "var(--accent)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = idx % 2 === 0 ? "transparent" : "rgba(124,58,237,0.03)";
-                e.currentTarget.style.borderColor = "rgba(124,58,237,0.25)";
+                e.currentTarget.style.background = idx % 2 === 0 ? "transparent" : "rgba(59,130,246,0.04)";
+                e.currentTarget.style.borderColor = "var(--border)";
               }}
             >
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, color: "#64748b", marginBottom: 6 }}>英文</div>
-                <div style={{ fontSize: 14, color: "#fff", marginBottom: 8, fontFamily: "monospace", wordBreak: "break-word" }}>
+                <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 6 }}>英文</div>
+                <div style={{ fontSize: 14, color: "var(--ink)", marginBottom: 8, fontFamily: "monospace", wordBreak: "break-word" }}>
                   {s.text}
                 </div>
-                <div style={{ fontSize: 13, color: "#64748b", marginBottom: 4 }}>中文</div>
-                <div style={{ fontSize: 14, color: "#06b6d4" }}>
+                <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>中文</div>
+                <div style={{ fontSize: 14, color: "var(--cyan)" }}>
                   {s.meaning}
                 </div>
               </div>

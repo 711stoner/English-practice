@@ -541,16 +541,16 @@ export default function Practice() {
 
         <div className='card' style={{ marginTop: 12 }}>
           <div style={{ fontWeight: 700 }}>今日练习上限：{planInfo.maxDailyLoad || DAILY_MAX_LOAD} 句</div>
-          <div style={{ marginTop: 6, color: "#666" }}>
-            今日安排：复习 {planInfo.reviewPlanned || 0} 句，新学 {planInfo.newPlanned || 0} 句
+          <div style={{ marginTop: 6, color: "var(--muted)" }}>
+             今日安排：复习 {planInfo.reviewPlanned || 0} 句，新学 {planInfo.newPlanned || 0} 句
           </div>
           {(planInfo.deferredNewCount || 0) > 0 && (
-            <div style={{ marginTop: 6, color: "#666" }}>
+            <div style={{ marginTop: 6, color: "var(--muted)" }}>
               今日新增 {planInfo.deferredNewCount} 句，明天起进入新学池
             </div>
           )}
           {(planInfo.protectionReasons || []).length > 0 && (
-            <div style={{ marginTop: 6, color: "#666" }}>
+            <div style={{ marginTop: 6, color: "var(--muted)" }}>
               系统已自动控量：{planInfo.protectionReasons.join("、")}
             </div>
           )}
@@ -569,7 +569,7 @@ export default function Practice() {
             <div>综合回忆分：{Math.round(judgedSession.recall_score * 100)}%</div>
             <div>会或模糊率：{Math.round(judgedSession.success_rate * 100)}%</div>
             <div>失败率：{Math.round(judgedSession.fail_rate * 100)}%</div>
-            <div style={{ marginTop: 8, color: "#666" }}>
+            <div style={{ marginTop: 8, color: "var(--muted)" }}>
               {judgedSession.passed
                 ? "已达到今日打卡标准"
                 : "今日计划已做完，但还没达到今日打卡标准，需要继续巩固"}
@@ -590,7 +590,7 @@ export default function Practice() {
             </div>
 
             {!judgedSession.passed && (
-              <div style={{ marginTop: 8, color: "#666" }}>
+              <div style={{ marginTop: 8, color: "var(--muted)" }}>
                 今日打卡标准：{sessionTargetHint}
               </div>
             )}
@@ -604,7 +604,7 @@ export default function Practice() {
               </div>
             )}
             {checkinFeedback && (
-              <div style={{ marginTop: 8, color: "#666" }}>{checkinFeedback}</div>
+              <div style={{ marginTop: 8, color: "var(--muted)" }}>{checkinFeedback}</div>
             )}
           </div>
         )}
@@ -989,17 +989,17 @@ export default function Practice() {
       {current && (
         <div className='card' style={{ marginBottom: 16 }}>
           {practiceMode === 'dictation' && (
-            <div style={{ marginBottom: 20, padding: "16px", background: "rgba(124,58,237,0.1)", borderRadius: 12, border: "1px solid rgba(124,58,237,0.25)" }}>
-              <div style={{ fontSize: 13, color: "#64748b", marginBottom: 8 }}>中文提示</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: "#fff" }}>
+            <div style={{ marginBottom: 20, padding: "16px", background: "rgba(59,130,246,0.06)", borderRadius: 12, border: "1px solid var(--border)" }}>
+              <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 8 }}>中文提示</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: "var(--ink)" }}>
                 {current.meaning}
               </div>
             </div>
           )}
 
           {practiceMode === 'listening' && (
-            <div style={{ marginBottom: 16, padding: "12px", background: "rgba(6,182,212,0.1)", borderRadius: 10, border: "1px solid rgba(6,182,212,0.25)" }}>
-              <div style={{ fontSize: 12, color: "#06b6d4" }}>
+            <div style={{ marginBottom: 16, padding: "12px", background: "rgba(14,165,233,0.06)", borderRadius: 10, border: "1px solid var(--border-cyan)" }}>
+              <div style={{ fontSize: 12, color: "var(--cyan)" }}>
                 🎧 听写模式：点击朗读按钮，然后输入听到的句子
               </div>
             </div>
@@ -1057,7 +1057,7 @@ export default function Practice() {
           </form>
 
           {actionMessage && (
-            <div style={{ marginTop: 12, padding: 10, background: 'rgba(124,58,237,0.1)', color: '#06b6d4', fontSize: 13, borderRadius: 8 }}>
+            <div style={{ marginTop: 12, padding: 10, background: 'rgba(59,130,246,0.06)', color: 'var(--cyan)', fontSize: 13, borderRadius: 8 }}>
               {actionMessage}
             </div>
           )}
@@ -1069,16 +1069,16 @@ export default function Practice() {
           )}
 
           {showHint && !submitted && (
-            <div style={{ marginTop: 12, padding: 12, background: 'rgba(124,58,237,0.1)', borderRadius: 8, border: '1px solid rgba(124,58,237,0.25)' }}>
-              <div style={{ fontSize: 12, color: '#64748b', marginBottom: 6 }}>💡 提示</div>
-              <div style={{ fontSize: 14, color: '#fff' }}>
+            <div style={{ marginTop: 12, padding: 12, background: 'rgba(59,130,246,0.06)', borderRadius: 8, border: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>💡 提示</div>
+              <div style={{ fontSize: 14, color: 'var(--ink)' }}>
                 {practiceMode === 'listening' ? current.meaning : current.text}
               </div>
             </div>
           )}
 
           {confirmPrompt && (
-            <div style={{ marginTop: 10, padding: 10, background: 'rgba(6,182,212,0.1)', color: '#06b6d4', fontSize: 12, borderRadius: 8, border: '1px solid rgba(6,182,212,0.25)' }}>
+            <div style={{ marginTop: 10, padding: 10, background: 'rgba(14,165,233,0.06)', color: 'var(--cyan)', fontSize: 12, borderRadius: 8, border: '1px solid var(--border-cyan)' }}>
               {confirmPrompt}
             </div>
           )}

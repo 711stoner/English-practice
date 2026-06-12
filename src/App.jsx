@@ -321,7 +321,7 @@ export default function App() {
 
       <main className='container'>
         <Routes>
-          <Route path="/" element={<Navigate to="/practice" replace />} />
+          <Route path="/" element={<Navigate to="/bank" replace />} />
           <Route path="/bank" element={<SentenceBank />} />
           <Route path="/practice" element={<Practice />} />
           <Route path="/dashboard" element={<Dashboard />} />

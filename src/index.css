@@ -1,18 +1,18 @@
 :root {
-  --bg: #0a0c14;
-  --bg-2: #0f111e;
-  --bg-card: rgba(255, 255, 255, 0.04);
-  --bg-nav: rgba(10, 12, 20, 0.85);
-  --ink: #e2e8f0;
+  --bg: #f8fafc;
+  --bg-2: #f1f5f9;
+  --bg-card: rgba(255, 255, 255, 0.85);
+  --bg-nav: rgba(248, 250, 252, 0.92);
+  --ink: #1e293b;
   --muted: #64748b;
-  --accent: #7c3aed;
-  --accent-2: #a78bfa;
-  --cyan: #06b6d4;
-  --gradient: linear-gradient(135deg, #7c3aed, #06b6d4);
-  --border: rgba(124, 58, 237, 0.25);
-  --border-cyan: rgba(6, 182, 212, 0.25);
-  --glow: 0 0 24px rgba(124, 58, 237, 0.35);
-  --glow-cyan: 0 0 24px rgba(6, 182, 212, 0.35);
+  --accent: #3b82f6;
+  --accent-2: #60a5fa;
+  --cyan: #0ea5e9;
+  --gradient: linear-gradient(135deg, #3b82f6, #0ea5e9);
+  --border: rgba(59, 130, 246, 0.2);
+  --border-cyan: rgba(14, 165, 233, 0.2);
+  --glow: 0 0 24px rgba(59, 130, 246, 0.2);
+  --glow-cyan: 0 0 24px rgba(14, 165, 233, 0.2);
 }
 
 * {
@@ -24,7 +24,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
   font-weight: 400;
   color: var(--ink);
-  background: linear-gradient(135deg, #0a0c14 0%, #0f111e 50%, #0c0a1a 100%);
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #eff6ff 100%);
   background-attachment: fixed;
   position: relative;
   overflow-x: hidden;
@@ -35,8 +35,8 @@ body::before {
   position: fixed;
   inset: 0;
   background-image:
-    linear-gradient(0deg, transparent 24%, rgba(124, 58, 237, 0.08) 25%, rgba(124, 58, 237, 0.08) 26%, transparent 27%, transparent 74%, rgba(124, 58, 237, 0.08) 75%, rgba(124, 58, 237, 0.08) 76%, transparent 77%, transparent),
-    linear-gradient(90deg, transparent 24%, rgba(124, 58, 237, 0.08) 25%, rgba(124, 58, 237, 0.08) 26%, transparent 27%, transparent 74%, rgba(124, 58, 237, 0.08) 75%, rgba(124, 58, 237, 0.08) 76%, transparent 77%, transparent);
+    linear-gradient(0deg, transparent 24%, rgba(59, 130, 246, 0.04) 25%, rgba(59, 130, 246, 0.04) 26%, transparent 27%, transparent 74%, rgba(59, 130, 246, 0.04) 75%, rgba(59, 130, 246, 0.04) 76%, transparent 77%, transparent),
+    linear-gradient(90deg, transparent 24%, rgba(59, 130, 246, 0.04) 25%, rgba(59, 130, 246, 0.04) 26%, transparent 27%, transparent 74%, rgba(59, 130, 246, 0.04) 75%, rgba(59, 130, 246, 0.04) 76%, transparent 77%, transparent);
   background-size: 60px 60px;
   pointer-events: none;
   z-index: 1;
@@ -49,8 +49,8 @@ body::after {
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(circle at 20% 30%, rgba(124, 58, 237, 0.12) 0%, transparent 50%),
-              radial-gradient(circle at 80% 70%, rgba(6, 182, 212, 0.08) 0%, transparent 50%);
+  background: radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.06) 0%, transparent 50%),
+              radial-gradient(circle at 80% 70%, rgba(14, 165, 233, 0.04) 0%, transparent 50%);
   pointer-events: none;
   z-index: 0;
 }
@@ -73,7 +73,7 @@ body::after {
   background: var(--bg-nav);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
 }
 
 
@@ -131,12 +131,12 @@ body::after {
 
 .nav-link:hover {
   color: var(--ink);
-  background: rgba(124, 58, 237, 0.1);
+  background: rgba(59, 130, 246, 0.08);
 }
 
 .nav-link.active {
   color: #fff;
-  background: rgba(124, 58, 237, 0.2);
+  background: var(--accent);
   box-shadow: var(--glow);
 }
 
@@ -199,13 +199,13 @@ body::after {
   margin-bottom: 20px;
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04);
 }
 
 .card:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.95);
   border-color: var(--accent);
-  box-shadow: 0 8px 32px rgba(124, 58, 237, 0.15);
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.1);
 }
 
 .input {
@@ -215,7 +215,7 @@ body::after {
   margin-bottom: 12px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.7);
   color: var(--ink);
   font-family: inherit;
   font-size: 14px;
@@ -225,8 +225,8 @@ body::after {
 
 .input:focus {
   border-color: var(--accent);
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
 .input::placeholder {
@@ -259,7 +259,7 @@ body::after {
 
 .button:hover {
   transform: translateY(-2px);
-  box-shadow: var(--glow), 0 12px 24px rgba(124, 58, 237, 0.3);
+  box-shadow: var(--glow), 0 12px 24px rgba(59, 130, 246, 0.2);
   border-color: var(--accent-2);
 }
 
@@ -281,7 +281,7 @@ body::after {
 }
 
 .button.secondary:hover {
-  background: rgba(124, 58, 237, 0.1);
+  background: rgba(59, 130, 246, 0.08);
   border-color: var(--accent);
   box-shadow: var(--glow);
 }
@@ -298,7 +298,7 @@ body::after {
 .progress-bar {
   width: 100%;
   height: 6px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.06);
   border-radius: 3px;
   overflow: hidden;
   margin: 12px 0;
@@ -331,14 +331,14 @@ body::after {
 
 .stat-item:hover {
   border-color: var(--accent);
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(59, 130, 246, 0.06);
   box-shadow: var(--glow);
 }
 
 .stat-value {
   font-size: 28px;
   font-weight: 700;
-  color: #fff;
+  color: var(--ink);
   margin-bottom: 6px;
 }
 
@@ -350,7 +350,7 @@ body::after {
 
 .tag {
   display: inline-block;
-  background: rgba(6, 182, 212, 0.15);
+  background: rgba(14, 165, 233, 0.1);
   color: var(--cyan);
   padding: 4px 10px;
   border-radius: 6px;
@@ -386,7 +386,7 @@ h3,
 h4,
 h5,
 h6 {
-  color: #fff;
+  color: var(--ink);
   font-weight: 700;
   letter-spacing: 0.5px;
 }
@@ -402,7 +402,7 @@ h3 {
 }
 
 strong {
-  color: #fff;
+  color: var(--ink);
   font-weight: 700;
 }
 
@@ -439,7 +439,7 @@ table {
 table thead {
   position: sticky;
   top: 0;
-  background: rgba(124, 58, 237, 0.1);
+  background: rgba(59, 130, 246, 0.08);
   z-index: 10;
 }
 
@@ -453,16 +453,16 @@ table th {
 
 table td {
   padding: 12px;
-  border-bottom: 1px solid rgba(124, 58, 237, 0.1);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.08);
   color: var(--muted);
 }
 
 table tbody tr:nth-child(odd) {
-  background: rgba(124, 58, 237, 0.03);
+  background: rgba(59, 130, 246, 0.03);
 }
 
 table tbody tr:hover {
-  background: rgba(124, 58, 237, 0.08);
+  background: rgba(59, 130, 246, 0.08);
 }
 
 textarea {
