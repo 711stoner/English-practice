@@ -122,8 +122,10 @@ export default function NavCat() {
       <Canvas
         orthographic
         camera={{ zoom: 50, position: [0, 0, 10] }}
+        gl={{ alpha: true }}
         style={{
-          position: 'absolute', width: '100%', height: '100%', pointerEvents: 'none'}}
+          position: 'absolute', width: '100%', height: '100%', pointerEvents: 'none',
+          background: 'transparent' }}
       >
         <ambientLight intensity={1} />
         <directionalLight position={[5, 5, 5]} intensity={0.8} />
@@ -192,7 +194,8 @@ export function ScreenCat() {
       <Canvas
         orthographic
         camera={{ zoom: 50, position: [0, 0, 10] }}
-        style={{ width: '100%', height: '100%', cursor: 'pointer' }}
+        gl={{ alpha: true }}
+        style={{ width: '100%', height: '100%', cursor: 'pointer', background: 'transparent' }}
         onClick={handleCanvasClick}
       >
         <ambientLight intensity={1} />
