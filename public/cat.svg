@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#0ea5e9"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#g)"/>
+  <g fill="#fff">
+    <!-- ears -->
+    <path d="M18 18 L22 30 L12 28 Z"/>
+    <path d="M46 18 L42 30 L52 28 Z"/>
+    <!-- head -->
+    <circle cx="32" cy="36" r="16"/>
+  </g>
+  <!-- eyes -->
+  <circle cx="26" cy="34" r="2.6" fill="#1e293b"/>
+  <circle cx="38" cy="34" r="2.6" fill="#1e293b"/>
+  <!-- nose -->
+  <path d="M30 40 h4 l-2 2.4 Z" fill="#f472b6"/>
+  <!-- whiskers -->
+  <g stroke="#1e293b" stroke-width="1.4" stroke-linecap="round">
+    <path d="M22 40 H13"/>
+    <path d="M22 43 H14"/>
+    <path d="M42 40 H51"/>
+    <path d="M42 43 H50"/>
+  </g>
+</svg>
