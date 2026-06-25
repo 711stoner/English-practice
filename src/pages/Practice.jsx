@@ -1107,7 +1107,7 @@ export default function Practice() {
             <div style={{ fontSize: 18, fontWeight: 700, color: result ? '#22c55e' : '#f97316', marginBottom: 8 }}>
               {result ? '✅ 内容正确' : '❌ 还差一点'}
             </div>
-            <div style={{ fontSize: 16, color: '#fff', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+            <div style={{ fontSize: 16, color: 'var(--ink)', fontFamily: 'monospace', wordBreak: 'break-all' }}>
               {current.text}
             </div>
             {result && fuzzyNotice && (

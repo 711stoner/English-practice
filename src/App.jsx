@@ -277,51 +277,53 @@ export default function App() {
   return (
     <div className='app'>
       <ScreenCat />
-      <header className='nav' style={{ position: 'relative'}}>
-        <div className='brand'>
-          <div className='brand-logo'>
-            <Logo3DCat />
+      <header className='nav'>
+        <div className='nav-inner'>
+          <div className='brand'>
+            <div className='brand-logo'>
+              <Logo3DCat />
+            </div>
+            <div className='brand-title'>小猫学英语</div>
           </div>
-          <div className='brand-title'>小猫学英语</div>
-        </div>
 
-        <div className='nav-links'>
-          <NavLink to="/bank" className='nav-link'>
-            📚 句仓
-          </NavLink>
-          <NavLink to="/practice" className='nav-link'>
-            ✏️ 练习
-          </NavLink>
-          <NavLink to="/dashboard" className='nav-link'>
-            📊 仪表盘
-          </NavLink>
-        </div>
-        <div className='auth-area'>
-          {user ? (
-            <span className='auth-user'>
-              已登录：{user.name}
-              {syncState ? ` · ${syncState}` : ""}
-            </span>
-          ) : (
-            <span className='auth-user muted'>未登录</span>
-          )}
-          <button className='button secondary auth-button' type='button' onClick={handleAuthClick}>
-            {user ? "退出" : "登录"}
-          </button>
-          {user && (
-            <button
-              className='button secondary auth-button' type="button" onClick={handleManualSync}
-              disabled={isSyncing}
-            >
-              {isSyncing ? "同步中" : "手动同步"}
+          <div className='nav-links'>
+            <NavLink to="/bank" className='nav-link'>
+              📚 句仓
+            </NavLink>
+            <NavLink to="/practice" className='nav-link'>
+              ✏️ 练习
+            </NavLink>
+            <NavLink to="/dashboard" className='nav-link'>
+              📊 仪表盘
+            </NavLink>
+          </div>
+          <div className='auth-area'>
+            {user ? (
+              <span className='auth-user'>
+                已登录：{user.name}
+                {syncState ? ` · ${syncState}` : ""}
+              </span>
+            ) : (
+              <span className='auth-user muted'>未登录</span>
+            )}
+            <button className='button secondary auth-button' type='button' onClick={handleAuthClick}>
+              {user ? "退出" : "登录"}
             </button>
-          )}
+            {user && (
+              <button
+                className='button secondary auth-button' type="button" onClick={handleManualSync}
+                disabled={isSyncing}
+              >
+                {isSyncing ? "同步中" : "手动同步"}
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
       <main className='container'>
         <Routes>
-          <Route path="/" element={<Navigate to="/bank" replace />} />
+          <Route path="/" element={<Navigate to="/practice" replace />} />
           <Route path="/bank" element={<SentenceBank />} />
           <Route path="/practice" element={<Practice />} />
           <Route path="/dashboard" element={<Dashboard />} />

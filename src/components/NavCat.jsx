@@ -208,7 +208,9 @@ export function ScreenCat() {
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.7)',
+            background: 'rgba(15,23,42,0.45)',
+            backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -219,23 +221,24 @@ export function ScreenCat() {
         >
           <div
             style={{
-              background: '#0a0c14',
-              border: '2px solid #7c3aed',
-              borderRadius: '12px',
-              padding: '24px',
-              maxWidth: '500px',
+              background: '#ffffff',
+              border: '1px solid rgba(15,23,42,0.1)',
+              borderRadius: '18px',
+              padding: '28px',
+              maxWidth: '520px',
               maxHeight: '80vh',
               overflow: 'auto',
-              color: '#e2e8f0',
+              color: '#334155',
               fontSize: '13px',
-              lineHeight: '1.8',
+              lineHeight: '1.85',
               whiteSpace: 'pre-wrap',
               wordBreak: 'break-word',
+              boxShadow: '0 24px 48px -24px rgba(15,23,42,0.45), 0 2px 6px rgba(15,23,42,0.06)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
             {GUIDE_CONTENT}
-            <div style={{ marginTop: '16px', textAlign: 'center', fontSize: '12px', color: '#64748b' }}>
+            <div style={{ marginTop: '18px', paddingTop: '14px', borderTop: '1px solid rgba(15,23,42,0.08)', textAlign: 'center', fontSize: '12px', color: '#94a3b8' }}>
               点击外侧关闭 | 点击小猫再次打开
             </div>
           </div>

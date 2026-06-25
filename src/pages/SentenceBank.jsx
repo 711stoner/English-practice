@@ -367,37 +367,15 @@ export default function SentenceBank() {
         <h2>📚 从书籍导入</h2>
         <p style={{ color: "var(--muted)", marginTop: 4 }}>选择一本书，快速导入精选句子</p>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8, marginBottom: 16 }}>
+        <div className="chip-grid" style={{ marginBottom: 16 }}>
           {BOOKS.map((book) => (
             <button
               key={book.id}
               type="button"
+              className={`chip ${selectedBook?.id === book.id ? "active" : ""}`}
               onClick={() => {
                 setSelectedBook(book);
                 setBookImportResult(null);
-              }}
-              style={{
-                padding: "12px",
-                background: selectedBook?.id === book.id ? "var(--accent)" : "rgba(59,130,246,0.08)",
-                border: selectedBook?.id === book.id ? "2px solid var(--accent)" : "1px solid var(--border)",
-                borderRadius: 10,
-                color: selectedBook?.id === book.id ? "#fff" : "var(--ink)",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-                fontSize: 13,
-                fontWeight: 600,
-              }}
-              onMouseEnter={(e) => {
-                if (selectedBook?.id !== book.id) {
-                  e.currentTarget.style.background = "rgba(59,130,246,0.12)";
-                  e.currentTarget.style.borderColor = "var(--accent)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (selectedBook?.id !== book.id) {
-                  e.currentTarget.style.background = "rgba(59,130,246,0.08)";
-                  e.currentTarget.style.borderColor = "var(--border)";
-                }
               }}
             >
               {book.title}
@@ -458,62 +436,18 @@ export default function SentenceBank() {
         <h2>✏️ 自行添加</h2>
         <p style={{ color: "var(--muted)", marginTop: 4 }}>选择添加方式</p>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8, marginBottom: 16 }}>
+        <div className="segmented" style={{ marginBottom: 16 }}>
           <button
             type="button"
+            className={addMode === "bulk" ? "active" : ""}
             onClick={() => setAddMode("bulk")}
-            style={{
-              padding: "12px",
-              background: addMode === "bulk" ? "var(--accent)" : "rgba(59,130,246,0.08)",
-              border: addMode === "bulk" ? "2px solid var(--accent)" : "1px solid var(--border)",
-              borderRadius: 10,
-              color: addMode === "bulk" ? "#fff" : "var(--ink)",
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-              fontSize: 13,
-              fontWeight: 600,
-            }}
-            onMouseEnter={(e) => {
-              if (addMode !== "bulk") {
-                e.currentTarget.style.background = "rgba(59,130,246,0.12)";
-                e.currentTarget.style.borderColor = "var(--accent)";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (addMode !== "bulk") {
-                e.currentTarget.style.background = "rgba(59,130,246,0.08)";
-                e.currentTarget.style.borderColor = "var(--border)";
-              }
-            }}
           >
             文本粘贴
           </button>
           <button
             type="button"
+            className={addMode === "excel" ? "active" : ""}
             onClick={() => setAddMode("excel")}
-            style={{
-              padding: "12px",
-              background: addMode === "excel" ? "var(--accent)" : "rgba(59,130,246,0.08)",
-              border: addMode === "excel" ? "2px solid var(--accent)" : "1px solid var(--border)",
-              borderRadius: 10,
-              color: addMode === "excel" ? "#fff" : "var(--ink)",
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-              fontSize: 13,
-              fontWeight: 600,
-            }}
-            onMouseEnter={(e) => {
-              if (addMode !== "excel") {
-                e.currentTarget.style.background = "rgba(59,130,246,0.12)";
-                e.currentTarget.style.borderColor = "var(--accent)";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (addMode !== "excel") {
-                e.currentTarget.style.background = "rgba(59,130,246,0.08)";
-                e.currentTarget.style.borderColor = "var(--border)";
-              }
-            }}
           >
             Excel 导入
           </button>
@@ -595,8 +529,8 @@ export default function SentenceBank() {
           <button className='button' type='button' onClick={handleExport} style={{ padding: "10px 12px" }}>
             📥 导出备份
           </button>
-          <label style={{ padding: "10px 12px", background: "rgba(59,130,246,0.08)", border: "1px solid var(--border)", borderRadius: 10, textAlign: "center", cursor: "pointer", transition: "all 0.3s ease", color: "var(--ink)" }} onMouseEnter={(e) => e.currentTarget.style.background = "rgba(59,130,246,0.15)"} onMouseLeave={(e) => e.currentTarget.style.background = "rgba(59,130,246,0.08)"}>
-            <span style={{ fontSize: 14, fontWeight: 600 }}>📂 选择文件</span>
+          <label className="button secondary" style={{ cursor: "pointer" }}>
+            📂 选择文件
             <input
               type="file" accept=".json" onChange={(e) => setBackupFile(e.target.files?.[0] || null)}
               style={{ display: "none" }}
