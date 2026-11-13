@@ -1,18 +1,10 @@
-<!doctype html><html lang="zh-CN"><meta charset="UTF-8"><link rel="icon" href="favicon.png" type="image/png"><meta name="viewport" content="width=device-width,initial-scale=1"><title>隐私说明</title><link rel="stylesheet" href="site.css?v=original-8e39aa9"><body>
-<header><strong>社媒评论AI智能营销助手</strong><span>隐私说明 · 开发阶段</span><a class="site-contact" href="mailto:wuhuwang65@gmail.com" title="联系开发者">联系邮箱：wuhuwang65@gmail.com</a></header><main><h1>隐私说明</h1>
-<p>本产品尚处开发测试阶段。本说明在正式运营前须补齐经营者身份、联系邮箱、存储地点、数据保存期限与适用法律条款。</p>
-<h2>保存在浏览器本地的数据</h2><p>你手动粘贴的、来自不同社交平台的原创文字、语言风格档案、产品信息、候选帖子和评论草稿，默认存储在 Chrome 扩展的本地存储中。卸载扩展或清除数据可能造成丢失。</p>
-<h2>使用云端 AI 的数据</h2><p>当你主动选择第三方 Gemini 或 OpenRouter 并勾选知情确认时，插件会把当前任务需要的文字直接发送给对应模型服务商；不会经过本产品服务器。Google 提示 Gemini 免费层内容可能用于改进其服务，且可能有人工审核，不应提交敏感资料。选择 Cloudflare 托管 AI 并明确授权时，才会把必要文字发送给自有 Worker。WebLLM/Qwen 本地 AI 首次需从 Hugging Face 等来源下载模型权重文件，下载请求不携带你的原创语料。模型加载后，文字分析和生成在设备本地进行；缓存被清除时可能需要重新下载。</p>
-<h2>账号及计费信息</h2><p>云端账户服务器保存经验证的邮箱、会话标识摘要、使用次数与订阅状态。支付卡资料由支付服务商处理，插件不保存银行卡卡号。</p>
-<h2>你的控制</h2><p>插件提供删除全部本地数据入口。云端账户删除与数据导出功能在正式上线前还需要补齐，不应在该功能上线前公开运营。</p>
-<p><a href="index.html">返回首页</a></p><section><h2>X 官方搜索推荐</h2>
-<p>仅当 X 官方搜索服务已开通、且用户主动点击推荐或主动允许保存产品后自动搜索时，插件才向私有服务发送产品简介和搜索关键词。不会发送个人原创语料或风格档案。只有用户选中的帖子会被保存为本地候选帖；不会代用户发布评论。</p>
-</section>
-<section><h2>开发者本地第三方数据源测试</h2>
-<p>未公开发布的个人测试版可选择 Sorsa 搜索公开 X 帖子，仅主动发送搜索词，不会上传个人原创语料或风格档案。Key 只临时保存于浏览器会话；Sorsa 并非 X 官方授权的搜索接口，是否符合 X 的数据条款仍须独立核实。</p></section>
-
-<section><h2>最近一次搜索结果的本地缓存</h2>
-<p>为方便用户写完一条评论后继续选帖，插件仅在本机保存最近一次搜索及主动加载的分页结果（最多200条公开帖文、作者、链接和数据来源）。返回及重新打开插件不会再次搜索。新结果会覆盖旧缓存，删除全部本地数据也会清除缓存；第三方 API Key 不会包含在其中。</p></section>
-</main>
-
-</body></html>
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f8f6ff"><meta name="robots" content="index,follow"><link rel="icon" href="/favicon.png" type="image/png"><link rel="stylesheet" href="/site.css"><title>隐私说明｜社媒评论AI智能营销助手</title></head>
+<body class="legal-page"><header class="site-header"><div class="shell nav-wrap"><a class="brand" href="/"><img src="/favicon.png" width="40" height="40" alt=""><span>社媒评论AI智能营销助手</span></a><a class="nav-contact" href="/">返回首页 ↗</a></div></header>
+<main class="legal-main shell"><span class="section-kicker">社媒评论AI智能营销助手</span><h1>隐私说明</h1><p class="legal-lead">最近更新：2026 年 11 月 13 日。本文适用于社媒评论AI智能营销助手浏览器扩展和本网站。</p><p class="notice">本产品的公开商店版本仍在准备中，部分云端功能尚未开放。以下说明区分当前本地功能与需要另行启用的在线功能。</p>
+<h2>1. 浏览器本地数据</h2><p>你主动提供的原创文字、表达风格档案、产品资料、候选帖子和评论草稿默认保存在浏览器扩展本地。最近一次主动搜索的候选帖文及分页结果可能保存在本机，方便继续写回复。卸载扩展或清除本地数据可能造成这些内容无法恢复。</p>
+<h2>2. AI 服务与外部传输</h2><p>在设备兼容且用户主动启动时，本地 Qwen 模型可在浏览器内执行文字分析或生成；首次需要下载模型文件。你主动选择 Gemini、OpenRouter 等第三方 AI 并授权时，仅会将该任务所需的文字发送到相应服务商，受其自身隐私政策约束。不要输入密码、银行卡资料或不希望发送的敏感内容。</p><p>规划中的托管云端 AI 默认未启用；只有在功能开放、告知数据用途并经你主动授权后，才会发送任务所需内容到相应服务端。</p>
+<h2>3. X 搜索与第三方数据</h2><p>当前免费流程是生成搜索词与 X 搜索链接，再由用户选择帖子。开发者使用的 Sorsa 第三方搜索接口仅供未公开的开发版本测试，须用户显式操作并提供临时 API Key；测试搜索只发送关键词等必要信息，不发送个人原创语料或风格档案。此接口不是 X 官方服务，不应视为已开放的商业功能。</p>
+<h2>4. 账号、支付和使用额度</h2><p>目前没有开放真实订阅收款。未来若启用邮箱登录与云端会员服务，将根据实际功能处理必要的邮箱、会话标识、额度和会员状态，并在上线前进一步完善本说明。银行卡资料应由支付服务商处理，而非存入浏览器扩展。</p>
+<h2>5. 你拥有的控制权</h2><p>你可以在扩展中管理并清除本地资料。第三方 AI 的数据处理规则和保存时限由各服务商独立决定。正式推出云端账户前会补齐云端账户删除等机制及相应政策。</p>
+<h2>6. 联系方式</h2><p>如对隐私或数据处理有疑问，请联系 <a class="text-link" href="mailto:wuhuwang65@gmail.com">wuhuwang65@gmail.com</a>。</p><p style="margin-top:45px"><a class="text-link" href="/">← 返回首页</a></p></main><footer class="site-footer"><div class="shell footer-bottom"><span>© 2026 社媒评论AI智能营销助手</span><span>联系邮箱：<a href="mailto:wuhuwang65@gmail.com">wuhuwang65@gmail.com</a></span></div></footer></body></html>

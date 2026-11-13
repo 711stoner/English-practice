@@ -1,10 +1,95 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><link rel="icon" href="favicon.png" type="image/png"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>社媒评论AI智能营销助手</title><link rel="stylesheet" href="site.css?v=original-8e39aa9"></head>
-<body><header><strong><img src="favicon.png" alt="" class="site-logo">社媒评论AI智能营销助手</strong><span>创作工具 · 简体中文</span><a class="site-contact" href="mailto:wuhuwang65@gmail.com" title="联系开发者">联系邮箱：wuhuwang65@gmail.com</a></header>
-<main><h1>把自己的语气留住，找到值得回复的人。</h1>
-<p>把自己在 X、Threads、微博或其他平台写过的文字一行一条贴进文本框，整理说话风格；再设置产品、寻找讨论、生成可修改的回复草稿。所有发布操作均由你本人完成。</p>
-<div class="cards"><article><h2>免费体验</h2><p>¥0</p><p>手动输入自己的原创文字、本地 Qwen 风格分析及评论草稿、生成免费的 X 搜索链接、手动选择和发布评论。无需订阅，也无需付费 X 搜索接口。</p><span>本地 Qwen 首次使用需下载模型并支持 WebGPU；也可自行使用 Gemini 或 OpenRouter Key，相关模型费用由用户自行承担。</span></article>
-<article><h2>专业版 · 功能规划中</h2><p>¥39 / 月</p><p>包含免费版全部功能；每月最多 10 次 X 官方真实帖子自动推荐（每次最多 10 条）、30 条托管 AI 评论草稿、5 次云端风格分析。</p><span>¥39/月是计划测试价；目前仅支持 Paddle Sandbox 模拟付款，X 自动搜索与托管 AI 默认关闭。</span></article></div>
-<h2>当前可用功能与限制</h2><p>现在还不是正式收费产品。付费功能需要官方 X API 许可和服务器预算上限，暂未启用。免费版可以直接在 Chrome 运行；Sandbox 付款仅供开发测试。</p>
-<p>插件不会自动抓取任何社交平台的帖子，也不会自动发布评论。AI 输出需要人工审核，用户应遵守 X 的相关规则。</p></main>
-<footer><a href="privacy.html">隐私说明</a><a href="terms.html">使用条款（草案）</a><a href="refund.html">退款说明（草案）</a><a href="mailto:wuhuwang65@gmail.com">联系邮箱</a></footer></body></html>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8f6ff">
+  <meta name="description" content="社媒评论AI智能营销助手：学习你自己的表达风格，寻找 X 等社交平台上值得参与的讨论，生成自然、可编辑的 AI 评论草稿。手动审核与发布，保留真实的你。">
+  <meta name="keywords" content="社媒评论助手,AI社媒评论助手,AI评论营销,社交媒体评论,AI评论生成,Twitter评论助手,X评论助手,个人表达风格,社媒营销插件,Chrome扩展">
+  <meta name="robots" content="index,follow">
+  <link rel="canonical" href="https://mememeeme.mom/">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="stylesheet" href="/site.css">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:site_name" content="社媒评论AI智能营销助手">
+  <meta property="og:title" content="社媒评论AI智能营销助手｜让评论像你亲自写的">
+  <meta property="og:description" content="保留你的表达风格，发现相关讨论，让 AI 帮你准备评论草稿。最终由你决定是否发布。">
+  <meta property="og:url" content="https://mememeeme.mom/">
+  <meta property="og:image" content="https://mememeeme.mom/media/social-preview.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <title>社媒评论AI智能营销助手｜让评论像你亲自写的</title>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"社媒评论AI智能营销助手","applicationCategory":"BrowserApplication","operatingSystem":"Chrome, Edge","description":"学习用户的原创表达风格，辅助寻找社交媒体讨论并起草可编辑的评论，由用户人工审核与发布。","url":"https://mememeeme.mom/","softwareVersion":"0.3.5"}</script>
+</head>
+<body>
+  <a href="#main" class="skip-link">跳到主要内容</a>
+  <header class="site-header">
+    <div class="shell nav-wrap">
+      <a class="brand" href="/" aria-label="社媒评论AI智能营销助手 首页"><img src="/favicon.png" width="40" height="40" alt=""><span>社媒评论<span class="brand-accent">AI</span>智能营销助手</span></a>
+      <nav class="main-nav" aria-label="主导航">
+        <a href="#how">怎么使用</a><a href="#features">功能介绍</a><a href="#preview">界面预览</a><a href="#faq">常见问题</a>
+      </nav>
+      <a class="nav-contact" href="mailto:wuhuwang65@gmail.com?subject=社媒评论AI智能营销助手咨询">联系我们 <span aria-hidden="true">↗</span></a>
+    </div>
+  </header>
+  <main id="main">
+    <section class="hero shell" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <span class="eyebrow"><span class="status-dot"></span> 为有想法的创作者而做 · Chrome / Edge 扩展</span>
+        <h1 id="hero-title">让每一次评论，<br><em>都像你亲自写的。</em></h1>
+        <p class="hero-intro">不必复制千篇一律的 AI 话术。把自己的文字教给助手，找到与你关心的话题相关的讨论，再用熟悉的语气写出一条值得发布的评论。</p>
+        <div class="hero-actions"><a class="btn btn-primary" href="#how">看看如何使用 <span aria-hidden="true">↗</span></a><a class="btn btn-secondary" href="#preview">查看真实界面 <span aria-hidden="true">→</span></a></div>
+        <div class="hero-note"><span class="mini-check">✓</span> 你决定回复谁 <span class="sep">·</span> <span class="mini-check">✓</span> 你审核每条评论 <span class="sep">·</span> <span class="mini-check">✓</span> 不会自动发布</div>
+      </div>
+      <div class="hero-media">
+        <div class="orbit orbit-one" aria-hidden="true"></div><div class="orbit orbit-two" aria-hidden="true"></div>
+        <div class="floating-note note-top"><span aria-hidden="true">✦</span> 从你的表达中学习</div>
+        <figure class="screenshot-frame"><div class="browser-bar"><div class="traffic"><i></i><i></i><i></i></div><span>社媒评论AI智能营销助手</span><span class="browser-dots">•••</span></div><img src="/media/overview.png" width="1280" height="800" alt="社媒评论AI智能营销助手工作台的真实界面截图"></figure>
+        <div class="floating-note note-bottom"><span aria-hidden="true">✍</span> 草稿由你修改和发布</div>
+      </div>
+    </section>
+    <div class="ribbon"><div class="shell ribbon-inner"><span>你的文字，你的语气</span><span>找到有价值的讨论</span><span>把回复留在自己手里</span></div></div>
+    <section id="how" class="section shell">
+      <div class="section-head"><span class="section-kicker">HOW IT WORKS · 三步完成</span><h2>AI 帮你组织语言，<br>不是替你假装成别人。</h2><p>从你的原创表达开始，让找话题、写评论成为一套清晰、可控的流程。</p></div>
+      <div class="steps">
+        <article class="step"><span class="step-num">01</span><span class="step-emoji" aria-hidden="true">✳</span><h3>留下你的表达风格</h3><p>把自己写过的句子一行一条贴进去。工具整理你常用的语气、句式和表达习惯，而不是套用统一模板。</p><span class="step-tag">手动录入 · 自主控制</span></article>
+        <article class="step"><span class="step-num">02</span><span class="step-emoji" aria-hidden="true">⌕</span><h3>寻找值得参与的讨论</h3><p>填写话题或产品，生成 X 搜索词和搜索入口。由你挑选感兴趣的公开帖子，决定要不要加入对话。</p><span class="step-tag">免费搜索链接 · 手动选择</span></article>
+        <article class="step"><span class="step-num">03</span><span class="step-emoji" aria-hidden="true">↗</span><h3>写出真正想说的话</h3><p>结合帖文和你的风格准备草稿，随时编辑、切换帖子或继续上次写了一半的回复。确认后由你自己发布。</p><span class="step-tag">可编辑草稿 · 不自动发送</span></article>
+      </div>
+    </section>
+    <section id="features" class="section feature-section"><div class="shell">
+      <div class="section-head"><span class="section-kicker">MADE FOR REAL VOICES · 功能亮点</span><h2>更贴近真实创作过程，<br>少一点机械感。</h2></div>
+      <div class="feature-grid">
+        <article class="feature"><span class="feature-icon">✎</span><h3>学习你自己的语气</h3><p>从你主动提供的原创文字中整理表达特征，减少生硬的“AI 味”。</p></article>
+        <article class="feature"><span class="feature-icon">◎</span><h3>产品和话题资料</h3><p>保存想介绍的内容，帮助评论更紧扣讨论本身，而不是强行插入广告。</p></article>
+        <article class="feature"><span class="feature-icon">⌕</span><h3>搜索与选帖分开</h3><p>免费生成 X 搜索入口，帖子由你判断；不擅自抓取、评论或关注。</p></article>
+        <article class="feature"><span class="feature-icon">▣</span><h3>草稿不怕写到一半</h3><p>候选帖子与不同帖子的评论草稿可在本机保存，方便回来继续修改。</p></article>
+        <article class="feature"><span class="feature-icon">✧</span><h3>灵活选择 AI 方式</h3><p>在兼容设备上可尝试本地 Qwen，也支持按需配置自己的模型服务 Key。</p></article>
+        <article class="feature"><span class="feature-icon">♡</span><h3>发布权始终属于你</h3><p>每条建议都需要人工核对。助手不代你发帖，也不承诺流量或互动结果。</p></article>
+      </div>
+    </div></section>
+    <section id="preview" class="section shell preview-section">
+      <div class="section-head"><span class="section-kicker">REAL PRODUCT SCREENS · 功能界面</span><h2>不是概念图，<br>是已经做出来的工作流程。</h2><p>以下截图来自当前 0.3.5 版插件的展示素材，实际可用功能以插件版本和设备条件为准。</p></div>
+      <div class="preview-grid">
+        <figure class="preview-card"><img src="/media/style.png" loading="lazy" width="1280" height="800" alt="录入原创文字，学习个人表达风格的插件界面"><figcaption><strong>01 / 学习表达</strong><span>先理解你的说话方式</span></figcaption></figure>
+        <figure class="preview-card"><img src="/media/search.png" loading="lazy" width="1280" height="800" alt="查找相关 X 讨论并选择帖子的插件界面"><figcaption><strong>02 / 寻找讨论</strong><span>找到适合参与的话题</span></figcaption></figure>
+        <figure class="preview-card"><img src="/media/draft.png" loading="lazy" width="1280" height="800" alt="生成并编辑社媒评论草稿的插件界面"><figcaption><strong>03 / 准备回复</strong><span>最后一句由你自己决定</span></figcaption></figure>
+      </div>
+    </section>
+    <section class="section shell plans-section" id="availability"><div class="plan-heading"><span class="section-kicker">START SIMPLE · 产品开放情况</span><h2>先把免费工作流做好。</h2><p>真正的订阅收费和自动推荐尚未开放，不需要为了试用手动评论流程而购买会员。</p></div>
+      <div class="plan-grid"><article class="plan-card active-plan"><span class="plan-label">免费工作流</span><div class="plan-price">¥0 <small>/ 计划免费</small></div><h3>用自己的方式开始</h3><ul><li>手动输入个人原创语料</li><li>保存产品资料与评论草稿</li><li>生成搜索词与 X 搜索链接</li><li>自选帖子，人工审核与发布</li></ul><p class="plan-fine">本地 AI 需要兼容浏览器及 WebGPU；自带第三方 Key 可能产生服务商费用。</p></article>
+      <article class="plan-card"><span class="plan-label upcoming">规划中 · 尚未收费</span><div class="plan-price">¥39 <small>/ 月（测试计划价）</small></div><h3>进阶营销工作流</h3><ul><li>官方 X 帖子推荐：计划按月限额</li><li>托管 AI 评论草稿与风格分析</li><li>账户、会员额度和订阅管理</li><li>更多省时的创作辅助能力</li></ul><p class="plan-fine">以上是产品规划，不代表这些服务现已可用。真实支付未开放。</p></article></div>
+      <p class="availability-note"><span class="status-dot"></span> Chrome / Edge 商店版本正在准备发布，暂不提供无法核实的商店下载链接。如需了解测试进展，请发邮件联系。</p>
+    </section>
+    <section id="faq" class="section faq-section"><div class="shell faq-wrap"><div><span class="section-kicker">QUESTIONS · 常见问题</span><h2>关于这个助手，<br>你可能想知道。</h2><p>尽量说清楚它能做什么、不能做什么。</p></div><div class="faq-list">
+      <details><summary>它会自动帮我评论、发帖或关注别人吗？</summary><p>不会。AI 可以辅助起草，但所有评论都需要你本人确认并发布，不会自动执行发布、关注或批量互动。</p></details>
+      <details><summary>它现在能自动搜索并推荐真实 X 帖子吗？</summary><p>免费流程提供搜索词和 X 搜索链接，你自己选帖。X 官方自动推荐和云端托管 AI 属于尚未开放的进阶功能；开发者测试中使用的第三方搜索接口不属于正式商业功能。</p></details>
+      <details><summary>我输入的原创文字会上传到服务器吗？</summary><p>默认保存在浏览器本地。只有你主动选择外部 AI 服务并授权时，任务需要的文本才会发送至对应服务商。详见<a href="/privacy.html">隐私说明</a>。</p></details>
+      <details><summary>支持哪些社交平台？</summary><p>可以手动录入来自不同平台的原创文字作为风格样本。当前找公开讨论的流程主要面向 X；其他平台的自动搜索或自动发布并未开放。</p></details>
+      <details><summary>怎样安装？需要付费吗？</summary><p>目前 Chrome / Edge 商店版本处于发布准备阶段，正式安装地址尚未公布。现有免费工作流无需订阅；计划中的专业版尚未真实收费。</p></details>
+    </div></div></section>
+    <section class="closing shell"><span class="section-kicker">KEEP YOUR OWN VOICE</span><h2>被看见很重要，<br>但说出自己的话更重要。</h2><p>让工具帮你准备，让每一次交流仍然是人与人的对话。</p><a class="btn btn-primary" href="mailto:wuhuwang65@gmail.com?subject=咨询社媒评论AI智能营销助手">邮件联系开发者 ↗</a></section>
+  </main>
+  <footer class="site-footer"><div class="shell footer-grid"><div><a class="brand footer-brand" href="/"><img src="/favicon.png" width="36" height="36" alt=""><span>社媒评论AI智能营销助手</span></a><p>让你的每一次表达，都更像自己。</p></div><div class="footer-links"><a href="/privacy.html">隐私说明</a><a href="/terms.html">使用条款</a><a href="/refund.html">退款说明</a><a href="mailto:wuhuwang65@gmail.com">联系开发者</a></div></div><div class="shell footer-bottom"><span>© 2026 社媒评论AI智能营销助手</span><span>独立浏览器扩展 · 不是 X / Meta 官方产品</span></div></footer>
+</body>
+</html>

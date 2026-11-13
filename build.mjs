@@ -5,6 +5,6 @@ const root = dirname(fileURLToPath(import.meta.url));
 const out = join(root, "dist");
 if (existsSync(out)) rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
-const assets = ["index.html","404.html","site.css","privacy.html","terms.html","refund.html","favicon.png","robots.txt","sitemap.xml"];
+const assets = ["index.html","404.html","site.css","privacy.html","terms.html","refund.html","favicon.png","robots.txt","sitemap.xml","media"];
 for (const asset of assets) cpSync(join(root, asset), join(out, asset), { recursive: true });
 console.log("Built static site in dist/ (" + assets.length + " entries)");
