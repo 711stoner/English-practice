@@ -24,3 +24,17 @@
 
 /* Prevent the existing hero background from extending past narrow screens. */
 @media (max-width: 760px) { .hero:before { right: 0; } }
+
+
+/* Confirmed Chrome and Edge store launches; retain the original purple layout. */
+.hero-guide-links{display:flex;flex-wrap:wrap;gap:19px;margin-top:15px;font-size:13px;font-weight:650;color:#7656ab}
+.hero-guide-links a{text-decoration:underline;text-underline-offset:4px;text-decoration-color:#c7b8dc}
+.hero-guide-links a:hover{color:var(--purple-dark)}
+.availability-note{align-items:flex-start;gap:15px}
+.availability-note .status-dot{margin-top:8px}
+.availability-copy{display:flex;flex-direction:column;gap:6px;min-width:0;line-height:1.75}
+.availability-copy strong{color:#514073;font-weight:750}
+.store-install-links{display:flex;flex-wrap:wrap;gap:11px;margin-top:11px}
+.store-install-links a{display:inline-flex;align-items:center;justify-content:center;max-width:100%;border-radius:10px;border:1px solid #d3c3eb;background:#fff;color:#62419f;padding:10px 14px;font-size:12px;font-weight:750;line-height:1.5}
+.store-install-links a:hover{background:#eee5fb}
+@media(max-width:760px){.hero-guide-links{gap:15px;margin-top:13px}.store-install-links{flex-direction:column;align-items:stretch}.store-install-links a{justify-content:flex-start}.availability-note{font-size:12px}}
