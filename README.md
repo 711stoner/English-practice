@@ -1,8 +1,29 @@
 # 社媒评论AI智能营销助手 · 官方网站
 
-- 正式域名：https://mememeeme.mom/
-- Cloudflare Pages 项目沿用 `english-practice`，仓库原为小猫学英语；2026-11-13 切换为本产品的官方网站。
-- 本目录是网站的单一开发来源；不包含扩展密钥或付费接口。
-- 本地运行 `npm run build`，生成 `dist/` 静态站点；Cloudflare Pages 使用相同的构建命令并发布 `dist/`。
-- 目前 Chrome / Edge 真实商店下载链接、订阅付款均未开放，站内不编造链接或承诺。
-- 更改内容请同步检查隐私、使用条款、退款说明与 SEO 信息。
+正式域名：https://mememeeme.mom/
+
+## 视觉设计与参考（2026-11-13）
+
+这次从 SaaS 模板改为独立刊物 / editorial utility 版式，设计系统写在 [DESIGN.md](DESIGN.md)。
+
+参考的两个开源项目：
+
+- [Impeccable](https://github.com/pbakaus/impeccable)：视觉设计流程、批评与质量审查。
+- [Anti Slop](https://github.com/miqdadbadjuber/anti-slop)：去掉同质化 AI 网页默认模式，重点检查配色、卡片、排版和泛化文案。
+
+不复制第三方成品设计；新网站采用自己品牌的真实插件素材。
+分享封面的编辑源文件为 `og-preview.html`，截图成 `media/social-preview.png`，PNG 为线上实际素材。
+
+## 发布
+
+- 原 Cloudflare Pages 项目与域名绑定不变，现用 GitHub 仓库 `711stoner/English-practice` 自动部署。
+- 本目录是单一可维护源码；`npm run build` 生成静态 `dist/` 目录，Pages 构建命令一致。
+- 网站资产只有 `index.html`、法律页面、站点地图、favicon、`media/` 的真实截图和 `site.css`，不依赖 UI 框架和外部脚本。
+- 不含扩展密钥、会员后端或实际付款代码；真实商店安装链接尚未核实，所以不提供假下载按钮。
+- 修改内容后检查文字事实、隐私、使用条款、退款说明、手机视口与 SEO。
+
+## 改版确认
+
+- 视觉检查宽度：390 / 500 / 768 / 1440px，无横向溢出。
+- 交互：FAQ 使用原生 details，主要导航跳转页面内实际 section，邮件按钮使用 mailto。
+- 网站功能与插件功能独立：只调整官网，不碰 `extension/`、`server/`。
