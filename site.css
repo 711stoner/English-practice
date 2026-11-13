@@ -21,3 +21,6 @@
   .preview-grid { grid-template-columns: 1fr; gap: 18px; }
   .preview-card img { width: 100% !important; max-height: none !important; }
 }
+
+/* Prevent the existing hero background from extending past narrow screens. */
+@media (max-width: 760px) { .hero:before { right: 0; } }
